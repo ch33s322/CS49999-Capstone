@@ -20,5 +20,30 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
-}
+
+        private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
+        {
+            //add code to change simplex duplex property
+        }
+
+        private void AddClick(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void SendJobClick(object sender, RoutedEventArgs e)
+        {
+            //add code for sending the jobs
+        }
+
+        private void DirectorySelectTextChanged(object sender, TextChangedEventArgs e)
+        {
+            //change current viewed directory
+        }
+
+        private void PrinterSelectSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //add code to handle printer selection changes
+        }
+    }
 }
