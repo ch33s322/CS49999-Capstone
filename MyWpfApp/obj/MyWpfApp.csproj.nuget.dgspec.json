@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\ch33s3\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj": {}
+    "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\ch33s3\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj": {
+    "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\ch33s3\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
+        "projectUniqueName": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
         "projectName": "MyWpfApp",
-        "projectPath": "C:\\Users\\ch33s3\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
-        "packagesPath": "C:\\Users\\ch33s3\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\ch33s3\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\obj\\",
+        "projectPath": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
+        "packagesPath": "C:\\Users\\Austin\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\ch33s3\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Austin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -34,16 +38,22 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net48": {
           "targetAlias": "net48",
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.102\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305\\RuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {
-        "win7-x86": {
+        "win-x86": {
           "#import": []
         }
       }
