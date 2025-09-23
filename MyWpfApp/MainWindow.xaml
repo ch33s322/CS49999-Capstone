@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
+        <Button Name="printerbutton" Width="100" Height="100"
+            VerticalAlignment="Top" HorizontalAlignment="Left"
+            Content="Printer Button" FontSize="20"/>
     </Grid>
 </Window>
