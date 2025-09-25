@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = MyWpfApp
-build_property.ProjectDir = C:\Users\Austin\CS49999-Capstone\MyWpfApp\
+build_property.ProjectDir = C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false
