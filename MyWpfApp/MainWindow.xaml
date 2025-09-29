@@ -3,9 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:MyWpfApp.ViewModel"
         xmlns:local="clr-namespace:MyWpfApp"
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
+
+    <Window.DataContext>
+        <vm:PrinterViewModel/>
+    </Window.DataContext>
     <Grid>
         <ComboBox Name="PrinterSelect" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,9,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged"></ComboBox>
 
@@ -31,15 +36,24 @@
         </DataGrid>
 
         <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="354,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="916">
-            <DataGrid Name="PrintJobManager" Height="674" Width="900" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <DataGrid Name="PrintJobManager" 
+                      ItemsSource="{Binding AvailablePrinters}" 
+                      Height="674" Width="900" 
+                      VerticalAlignment="Top" 
+                      HorizontalAlignment="Left" 
+                      SelectionChanged="PrintJobManager_SelectionChanged"
+                      AutoGenerateColumns="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Printer"  Width="50"/>
+                    <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="50"/>
                     <DataGridTextColumn Header="File Name"  Width="200"/>
                     <DataGridTextColumn Header="File Type"  Width="100"/>
                     <DataGridTextColumn Header="Pages"  Width="50"/>
                     <DataGridTextColumn Header="Status"  Width="50"/>
                 </DataGrid.Columns>
+                
+                
             </DataGrid>
+            
         </GroupBox>
 
     </Grid>

@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace MyWpfApp.Model
 {
-    internal class Printer
+    public class Printer
     {
+        public string Name { get; set; }
     }
 }

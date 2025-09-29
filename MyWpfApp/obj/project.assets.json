@@ -15,11 +15,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
+      "projectUniqueName": "C:\\Users\\Austin\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
       "projectName": "MyWpfApp",
-      "projectPath": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
+      "projectPath": "C:\\Users\\Austin\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\MyWpfApp.csproj",
       "packagesPath": "C:\\Users\\Austin\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Austin\\CS49999-Capstone\\MyWpfApp\\obj\\",
+      "outputPath": "C:\\Users\\Austin\\source\\repos\\ch33s322\\CS49999-Capstone\\MyWpfApp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
