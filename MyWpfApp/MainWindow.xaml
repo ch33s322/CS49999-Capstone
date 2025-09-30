@@ -48,7 +48,7 @@
                     <DataGridTextColumn Header="File Name"  Width="200"/>
                     <DataGridTextColumn Header="File Type"  Width="100"/>
                     <DataGridTextColumn Header="Pages"  Width="50"/>
-                    <DataGridTextColumn Header="Status"  Width="50"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="50"/>
                 </DataGrid.Columns>
                 
                 

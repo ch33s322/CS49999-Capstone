@@ -51,4 +51,3 @@ C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\obj\Debug\net48\
 C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\obj\Debug\net48\MyWpfApp.sourcelink.json
 C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\obj\Debug\net48\MyWpfApp.exe
 C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\obj\Debug\net48\MyWpfApp.pdb
-C:\Users\Austin\source\repos\ch33s322\CS49999-Capstone\MyWpfApp\obj\Debug\net48\MyWpfApp.exe.config
