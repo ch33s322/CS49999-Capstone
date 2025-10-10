@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Windows.Documents;
 using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
 
@@ -8,7 +10,7 @@ namespace MyWpfApp.Model
     internal class PdfSplitter
     {
         //splits a pdf into smaller pdfs but slicing every maxPages amount of pages
-        public void SplitPdf(string inputFilePath, string outputDirectory, string archiveDirectory, int maxPages)
+        public List<string> SplitPdf(string inputFilePath, string outputDirectory, int maxPages)
         {
             //check if inputpath exists
             if (!File.Exists(inputFilePath))
@@ -21,11 +23,6 @@ namespace MyWpfApp.Model
             {
                 throw new DirectoryNotFoundException($"Output directory not found: {outputDirectory}");
             }
-            //check if archive exists
-            if (!Directory.Exists(archiveDirectory))
-            {
-                throw new DirectoryNotFoundException($"Archive directory not found: {archiveDirectory}");
-            }
             //check if valid maxPagesAmount
             if (maxPages < 1)
             {
@@ -35,6 +32,9 @@ namespace MyWpfApp.Model
             //open pdf and read from original file
             PdfDocument input = PdfReader.Open(inputFilePath);
             int inputPageAmt = input.PageCount;
+
+            //output file name list
+            List<string> outputNameList = new List<string>();
 
             for (int i = 0; i < inputPageAmt; i += maxPages)
             {
@@ -48,18 +48,18 @@ namespace MyWpfApp.Model
                     output.AddPage(input.Pages[j]);
                 }
                 //get original filename
-                string inputFileName = Path.GetFileNameWithoutExtension(inputFilePath);
-                //create name for output file
-                string outputFileName = Path.Combine(outputDirectory, $"{inputFileName}_part_{i / maxPages + 1}.pdf");
+                string fileName = Path.GetFileNameWithoutExtension(inputFilePath)+$"_part_{i}->{endPage}.pdf";
+                //add file name to the
+                outputNameList.Add(fileName);
+                //create output path for file
+                string outputPath = Path.Combine(outputDirectory, fileName);
                 //save output pdf
-                output.Save(outputFileName);
+                output.Save(outputPath);
                 //dispose of output pdf
                 output.Dispose();
             }
-            //move input file to archive
-            File.Move(inputFilePath, archiveDirectory);
             //TODO: Add error handling if same file name exists in archive already
-            return;
+            return outputNameList;
         }
     }
 }
