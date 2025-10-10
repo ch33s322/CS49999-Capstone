@@ -7,9 +7,9 @@ using PdfSharpCore.Pdf.IO;
 
 namespace MyWpfApp.Model
 {
-    internal class PdfSplitter
+    public class PdfSplitter
     {
-        //splits a pdf into smaller pdfs but slicing every maxPages amount of pages
+        //splits a pdf into smaller pdfs but slicing every maxPages amount of pages and returns of a list of all file names to the pdfs it created
         public List<string> SplitPdf(string inputFilePath, string outputDirectory, int maxPages)
         {
             //check if inputpath exists
