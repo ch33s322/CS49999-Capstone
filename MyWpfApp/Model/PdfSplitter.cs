@@ -28,37 +28,36 @@ namespace MyWpfApp.Model
             {
                 throw new ArgumentOutOfRangeException(nameof(maxPages), "Max pages must be greater than 0");
             }
-
-            //open pdf and read from original file
-            PdfDocument input = PdfReader.Open(inputFilePath);
-            int inputPageAmt = input.PageCount;
-
             //output file name list
             List<string> outputNameList = new List<string>();
-
-            for (int i = 0; i < inputPageAmt; i += maxPages)
+            //using statement ensures proper clean up of pdfdocument object because it uses idisposable interface
+            using (PdfDocument input = PdfReader.Open(inputFilePath))
             {
-                //create new pdf
-                PdfDocument output = new PdfDocument();
-                //determine where the end page should be
-                int endPage = Math.Min(i + maxPages, inputPageAmt);
-                //copy pages from input pdf to output
-                for (int j = 0; j < endPage; j++)
+                //open pdf and read from original file
+                int inputPageAmt = input.PageCount;
+                for (int i = 0; i < inputPageAmt; i += maxPages)
                 {
-                    output.AddPage(input.Pages[j]);
+                    //create new pdf
+                    //determine where the end page should be
+                    int endPage = Math.Min(i + maxPages, inputPageAmt);
+                    using (PdfDocument output = new PdfDocument())
+                    {
+                        //copy pages from input pdf to output
+                        for (int j = 0; j < endPage; j++)
+                        {
+                            output.AddPage(input.Pages[j]);
+                        }
+                        //get original filename
+                        string fileName = Path.GetFileNameWithoutExtension(inputFilePath) + $"_part_{i}->{endPage}.pdf";
+                        //add file name to the
+                        outputNameList.Add(fileName);
+                        //create output path for file
+                        string outputPath = Path.Combine(outputDirectory, fileName);
+                        //save output pdf
+                        output.Save(outputPath);
+                    }
                 }
-                //get original filename
-                string fileName = Path.GetFileNameWithoutExtension(inputFilePath)+$"_part_{i}->{endPage}.pdf";
-                //add file name to the
-                outputNameList.Add(fileName);
-                //create output path for file
-                string outputPath = Path.Combine(outputDirectory, fileName);
-                //save output pdf
-                output.Save(outputPath);
-                //dispose of output pdf
-                output.Dispose();
             }
-            //TODO: Add error handling if same file name exists in archive already
             return outputNameList;
         }
     }
