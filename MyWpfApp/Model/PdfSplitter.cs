@@ -31,7 +31,7 @@ namespace MyWpfApp.Model
             //output file name list
             List<string> outputNameList = new List<string>();
             //using statement ensures proper clean up of pdfdocument object because it uses idisposable interface
-            using (PdfDocument input = PdfReader.Open(inputFilePath))
+            using (PdfDocument input = PdfReader.Open(inputFilePath, PdfDocumentOpenMode.Import))
             {
                 //open pdf and read from original file
                 int inputPageAmt = input.PageCount;
@@ -43,12 +43,12 @@ namespace MyWpfApp.Model
                     using (PdfDocument output = new PdfDocument())
                     {
                         //copy pages from input pdf to output
-                        for (int j = 0; j < endPage; j++)
+                        for (int j = i; j < endPage; j++)
                         {
                             output.AddPage(input.Pages[j]);
                         }
                         //get original filename
-                        string fileName = Path.GetFileNameWithoutExtension(inputFilePath) + $"_part_{i}->{endPage}.pdf";
+                        string fileName = Path.GetFileNameWithoutExtension(inputFilePath) + $"_part_{i+1}-{endPage}.pdf";
                         //add file name to the
                         outputNameList.Add(fileName);
                         //create output path for file
