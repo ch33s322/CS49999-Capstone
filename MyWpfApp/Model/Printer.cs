@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyWpfApp.Model
+namespace Printer.Model
 {
     public class Printer : INotifyPropertyChanged
     {
