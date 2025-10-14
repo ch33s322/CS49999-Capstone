@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FileSystemItemModel.Model;
+using System;
 using System.Collections.Generic;
 using System.Printing;
 using System.Text;
@@ -52,6 +53,14 @@ public partial class MainWindow : Window
         private void PrintJobManager_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+
+        private void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TreeViewItem item && item.DataContext is FileSystemItem fsItem)
+            {
+                fsItem.LoadChildren();
+            }
         }
     }
 }
