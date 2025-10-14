@@ -51,48 +51,84 @@ namespace MyWpfApp.Model
         // When new PDF file is found in input directory
         private void OnPdfCreated(object sender, FileSystemEventArgs e)
         {
-            // Run processing in a background task to avoid blocking our FileSystemWatcher's thread
-            Task.Run(() =>
+            _ = ProcessFileAsync(e.FullPath, _cts.Token);
+        }
+
+        private async Task ProcessFileAsync(string fullPath, CancellationToken token)
+        {
+            try
             {
-                try
+                const int maxAttempts = 10;
+                const int delay = 1000;
+
+                var ready = false;
+                for (int i = 0; i < maxAttempts; i++)
                 {
-                    // Ensure that file is fully written and not locked
-                    for (int i = 0; i < 10; i++)
+                    token.ThrowIfCancellationRequested();
+
+                    try
                     {
-                        try
+                        // Tryy opening file to see if it's been fully written to directory
+                        using (var fs = File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.None))
                         {
-                            using (FileStream stream = File.Open(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.None))
+                            // Double checking that file has content
+                            if (fs.Length > 0)
                             {
+                                ready = true;
                                 break;
                             }
                         }
-                        catch (IOException)
-                        {
-                            // Waiut and retry every 0.2s
-                            Thread.Sleep(200);
-                        }
+                    }
+                    catch (IOException)
+                    {
+                        // File is not written yet
+                        Debug.WriteLine($"File not yet written: {fullPath}");
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Permissions error
+                        Debug.WriteLine($"Insufficient privileges for: {fullPath}");
                     }
 
-                    // Archive original PDF if it doesn't yet exist
-                    string archivePath = Path.Combine(_archiveDirectory, Path.GetFileName(e.FullPath));
-                    if (!File.Exists(archivePath))
-                    {
-                        File.Copy(e.FullPath, archivePath);
-                        Debug.WriteLine($"Successfully archived PDF: {e.FullPath} -> {archivePath}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Archive already contains: {archivePath}");
-                    }
-
-                    _pdfSplitter.SplitPdf(e.FullPath, _outputDirectory, _maxPages);
-                    Debug.WriteLine($"Split PDF: {e.FullPath} into {_outputDirectory}");
+                    // Delay task for 1000ms (1s)
+                    await Task.Delay(delay, token).ConfigureAwait(false);
                 }
-                catch (Exception ex)
+
+                if (!ready)
                 {
-                    Debug.WriteLine($"Error processing PDF '{e.FullPath}': {ex}");
+                    Debug.WriteLine($"Timed out waiting for file to be ready: {fullPath}");
+                    return;
                 }
-            });
+
+                token.ThrowIfCancellationRequested();
+
+                // Archive original PDF if it doesn't yet exist
+                string archivePath = Path.Combine(_archiveDirectory, Path.GetFileName(fullPath));
+                if (!File.Exists(archivePath))
+                {
+                    // Copy (using another thread) the original PDF to the archive directory
+                    await Task.Run(() => File.Copy(fullPath, archivePath, overwrite: false), token).ConfigureAwait(false);
+                    Debug.WriteLine($"Successfully archived PDF: {fullPath} -> {archivePath}");
+                }
+                else
+                {
+                    Debug.WriteLine($"Archive already contains: {archivePath}");
+                }
+
+                token.ThrowIfCancellationRequested();
+
+                // Passsing to PdfSplitter, again in another thread
+                await Task.Run(() => _pdfSplitter.SplitPdf(fullPath, _outputDirectory, _maxPages), token).ConfigureAwait(false);
+                Debug.WriteLine($"Split PDF: {fullPath} into {_outputDirectory}");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine($"Processing canceled for {fullPath}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error processing PDF '{fullPath}': {ex}");
+            }
         }
 
         // In case watching needs to be stopped
@@ -106,6 +142,7 @@ namespace MyWpfApp.Model
         public void Dispose()
         {
             StopWatching();
+            _watcher.Created -= OnPdfCreated;
             _watcher.Dispose();
             _cts.Dispose();
         }
