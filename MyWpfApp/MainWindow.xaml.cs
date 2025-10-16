@@ -1,4 +1,8 @@
-﻿using System.Text;
+﻿using FileSystemItemModel.Model;
+using System;
+using System.Collections.Generic;
+using System.Printing;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -44,6 +48,19 @@ public partial class MainWindow : Window
         private void PrinterSelectSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             //add code to handle printer selection changes
+        }
+
+        private void PrintJobManager_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TreeViewItem item && item.DataContext is FileSystemItem fsItem)
+            {
+                fsItem.LoadChildren();
+            }
         }
     }
 }

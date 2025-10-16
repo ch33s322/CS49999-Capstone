@@ -3,9 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Printer.ViewModel"
+        xmlns:fsvm="clr-namespace:FileSystem.ViewModel"    
+        xmlns:fsm="clr-namespace:FileSystemItemModel.Model" 
         xmlns:local="clr-namespace:MyWpfApp"
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
+    
+
     <Grid>
         <ComboBox Name="PrinterSelect" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,9,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged"></ComboBox>
 
@@ -22,24 +27,51 @@
         <TextBox Name="DirectorySelect" Width="234" Height="39" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="10,62,0,0" FontSize="20" TextChanged="DirectorySelectTextChanged"/>
         <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="173,12,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center"/>
 
-        <DataGrid Name="DirectoryViewer"  VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588">
+        <TreeView Name="fileTreeView" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588" ItemsSource="{Binding RootItems}">
+            <TreeView.DataContext>
+                <fsvm:FileSyetemViewModel/>
+            </TreeView.DataContext>
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type fsm:FileSystemItem}" ItemsSource="{Binding Children}">
+                    <TextBlock Text="{Binding Name}" />
+                </HierarchicalDataTemplate>
+            </TreeView.Resources>
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
+        
+        <!--<DataGrid Name="DirectoryViewer"  VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Icon" Binding="{Binding Icon}" Width="50"/>
                 <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="*"/>
                 <DataGridTextColumn Header="File Type" Binding="{Binding FileType}" Width="*"/>
             </DataGrid.Columns>
-        </DataGrid>
+        </DataGrid>-->
 
         <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="354,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="916">
-            <DataGrid Name="PrintJobManager" Height="674" Width="900" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <DataGrid Name="PrintJobManager" 
+                      ItemsSource="{Binding AvailablePrinters}" 
+                      Height="674" Width="900" 
+                      VerticalAlignment="Top" 
+                      HorizontalAlignment="Left" 
+                      SelectionChanged="PrintJobManager_SelectionChanged"
+                      AutoGenerateColumns="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Printer"  Width="50"/>
+                    <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="50"/>
                     <DataGridTextColumn Header="File Name"  Width="200"/>
                     <DataGridTextColumn Header="File Type"  Width="100"/>
                     <DataGridTextColumn Header="Pages"  Width="50"/>
-                    <DataGridTextColumn Header="Status"  Width="50"/>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="50"/>
                 </DataGrid.Columns>
+                <DataGrid.DataContext>
+                    <vm:PrinterViewModel/>
+                </DataGrid.DataContext>
+                
             </DataGrid>
+            
         </GroupBox>
 
     </Grid>
