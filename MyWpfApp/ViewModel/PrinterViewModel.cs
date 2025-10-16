@@ -1,9 +1,11 @@
-﻿using MyWpfApp.Model;
+﻿
+using Printer.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Management;
 using System.Net.NetworkInformation;
@@ -13,7 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Documents;
 
-namespace MyWpfApp.ViewModel
+namespace Printer.ViewModel
 {
     
     public class PrinterViewModel : INotifyPropertyChanged, IDisposable
@@ -174,4 +176,8 @@ namespace MyWpfApp.ViewModel
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+
+
+    
+
 }
