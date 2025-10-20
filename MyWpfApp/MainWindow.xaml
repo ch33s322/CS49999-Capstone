@@ -9,41 +9,46 @@
         xmlns:local="clr-namespace:MyWpfApp"
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
-    
+
 
     <Grid>
-        <ComboBox Name="PrinterSelect" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,9,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged"></ComboBox>
+        <TabControl Width="1260" Height="684" VerticalAlignment="Center" HorizontalAlignment="Center" >
+            <!-- Tab 1 -->
+            <TabItem Header="Print Job Manager">
+                <Grid Margin="0,0,10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="106*"/>
+                        <ColumnDefinition Width="53*"/>
+                        <ColumnDefinition Width="463*"/>
+                    </Grid.ColumnDefinitions>
 
-        <CheckBox Name="SimplexDuplexCheckBox" Checked="SimplexDuplexCheckBoxChecked" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="229,21,0,0" Height="15" Width="15"/>
+                    <ComboBox Name="PrinterSelect" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged"></ComboBox>
 
-        <Button Name="SendJob" Width="100" Height="39"
-            VerticalAlignment="Top" HorizontalAlignment="Left"
-            Content="Send Job" FontSize="20" Margin="249,9,0,0" Click="SendJobClick"/>
+                    <CheckBox Name="SimplexDuplexCheckBox" Checked="SimplexDuplexCheckBoxChecked" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="9,26,0,0" Height="14" Width="15" RenderTransformOrigin="0.733,-2.067" Grid.Column="1"/>
 
-        <Button Name="Add" Width="100" Height="39"
-            VerticalAlignment="Top" HorizontalAlignment="Left"
-            Content="Add" FontSize="20" Margin="249,62,0,0" Click="AddClick"/>
+                    <Button Name="SendJob" Width="100" Height="39"
+                    VerticalAlignment="Top" HorizontalAlignment="Left"
+                    Content="Send Job" FontSize="20" Margin="37,10,0,0" Click="SendJobClick" RenderTransformOrigin="0.5,-0.845" Grid.Column="1" Grid.ColumnSpan="2"/>
 
-        <TextBox Name="DirectorySelect" Width="234" Height="39" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="10,62,0,0" FontSize="20" TextChanged="DirectorySelectTextChanged"/>
-        <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="173,12,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center"/>
+                    <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="164,16,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center" Grid.ColumnSpan="2"/>
 
-        <TreeView Name="fileTreeView" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588" ItemsSource="{Binding RootItems}">
-            <TreeView.DataContext>
-                <fsvm:FileSyetemViewModel/>
-            </TreeView.DataContext>
-            <TreeView.Resources>
-                <HierarchicalDataTemplate DataType="{x:Type fsm:FileSystemItem}" ItemsSource="{Binding Children}">
-                    <TextBlock Text="{Binding Name}" />
-                </HierarchicalDataTemplate>
-            </TreeView.Resources>
-            <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem">
-                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
-                </Style>
-            </TreeView.ItemContainerStyle>
-        </TreeView>
-        
-        <!--<DataGrid Name="DirectoryViewer"  VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588">
+                    <TreeView Name="fileTreeView" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,54,0,0" Width="339" Height="602" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
+                        <TreeView.DataContext>
+                            <fsvm:FileSyetemViewModel/>
+                        </TreeView.DataContext>
+                        <TreeView.Resources>
+                            <HierarchicalDataTemplate DataType="{x:Type fsm:FileSystemItem}" ItemsSource="{Binding Children}">
+                                <TextBlock Text="{Binding Name}" />
+                            </HierarchicalDataTemplate>
+                        </TreeView.Resources>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
+
+                    <!--<DataGrid Name="DirectoryViewer"  VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Icon" Binding="{Binding Icon}" Width="50"/>
                 <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="*"/>
@@ -51,28 +56,51 @@
             </DataGrid.Columns>
         </DataGrid>-->
 
-        <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="354,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="916">
-            <DataGrid Name="PrintJobManager" 
+                    <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="900" Grid.Column="2">
+                        <DataGrid Name="PrintJobManager" 
                       ItemsSource="{Binding AvailablePrinters}" 
-                      Height="674" Width="900" 
+                      Height="638" Width="896" 
                       VerticalAlignment="Top" 
                       HorizontalAlignment="Left" 
                       SelectionChanged="PrintJobManager_SelectionChanged"
                       AutoGenerateColumns="False">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="50"/>
-                    <DataGridTextColumn Header="File Name"  Width="200"/>
-                    <DataGridTextColumn Header="File Type"  Width="100"/>
-                    <DataGridTextColumn Header="Pages"  Width="50"/>
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="50"/>
-                </DataGrid.Columns>
-                <DataGrid.DataContext>
-                    <vm:PrinterViewModel/>
-                </DataGrid.DataContext>
-                
-            </DataGrid>
-            
-        </GroupBox>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="50"/>
+                                <DataGridTextColumn Header="File Name"  Width="200"/>
+                                <DataGridTextColumn Header="File Type"  Width="100"/>
+                                <DataGridTextColumn Header="Pages"  Width="50"/>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="50"/>
+                            </DataGrid.Columns>
+                            <DataGrid.DataContext>
+                                <vm:PrinterViewModel/>
+                            </DataGrid.DataContext>
+
+                        </DataGrid>
+
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- Tab 2 -->
+            <TabItem Header="Admin Page">
+                <TextBox Text="Put admin Page here"/>
+            </TabItem>
+
+            <!-- Tab 3  -->
+            <TabItem Header="Settings Page">
+                <Grid>
+                    <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <TextBox Name="InputDir" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged"/>
+                    <Label Content="Job Well" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <TextBox Name="JobWell" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,27,0,0" FontSize="12" />
+                    <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,49,0,0" FontSize="12" />
+                    <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,71,0,0" FontSize="12" />
+                </Grid>
+            </TabItem>
+        </TabControl>
+
 
     </Grid>
 </Window>
