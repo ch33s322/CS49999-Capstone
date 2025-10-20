@@ -87,10 +87,10 @@ namespace MyWpfApp.Tests
         [Fact]
         public async Task ArchivesAndSplitsNewPdf()
         {
-            var poller = new PollAndArchive(_inputDir, _archiveDir);
+            var poller = new PollAndArchive(_inputDir, _archiveDir, _outputDir);
             try
             {
-                poller.StartWatching(1, _outputDir);
+                poller.StartWatching();
 
                 // Write to temp outside watched dir, then move in
                 var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".pdf.part");
@@ -106,7 +106,8 @@ namespace MyWpfApp.Tests
 
                 // Check for split PDF (at least 1) in output dir
                 var splits = await WaitForFilesAsync(_outputDir, "*.pdf", timeoutMs: 10000);
-                Assert.True(splits.Length > 0, "Expected at least one split PDF in the output directory.");
+                var outputFile = Path.Combine(_outputDir, "test.pdf");
+                Assert.True(File.Exists(outputFile), "Expected the PDF to be moved to the output directory.");
             }
             finally
             {
@@ -117,10 +118,10 @@ namespace MyWpfApp.Tests
         [Fact]
         public async Task AtomicCreateTriggersProcessing()
         {
-            var poller = new PollAndArchive(_inputDir, _archiveDir);
+            var poller = new PollAndArchive(_inputDir, _archiveDir, _outputDir);
             try
             {
-                poller.StartWatching(1, _outputDir);
+                poller.StartWatching();
 
                 // Write a PDF to a temp subdir and then move into watched dir
                 var tmpDir = Path.Combine(Path.GetTempPath(), "pa_test_tmp_" + Guid.NewGuid());
@@ -135,9 +136,8 @@ namespace MyWpfApp.Tests
                 var archived = Path.Combine(_archiveDir, "testpollandarchive.pdf");
                 Assert.True(await WaitForFileAsync(archived, 10000), "Archived PDF did not appear within timeout.");
 
-                // Assert split created
-                var splits = await WaitForFilesAsync(_outputDir, "*.pdf", timeoutMs: 10000);
-                Assert.True(splits.Length > 0, "No split output found after atomic create.");
+                var outputFile = Path.Combine(_outputDir, "testpollandarchive.pdf");
+                Assert.True(File.Exists(outputFile), "PDF was not moved to the output directory.");
             }
             finally
             {
@@ -149,10 +149,10 @@ namespace MyWpfApp.Tests
         public async Task ProcessesMultipleFilesConcurrently()
         {
             // Arrange
-            var poller = new PollAndArchive(_inputDir, _archiveDir);
+            var poller = new PollAndArchive(_inputDir, _archiveDir, _outputDir);
             try
             {
-                poller.StartWatching(1, _outputDir);
+                poller.StartWatching();
 
                 const int fileCount = 3;
                 var fileNames = Enumerable.Range(1, fileCount).Select(i => $"multi_{i}.pdf").ToArray();
@@ -183,7 +183,7 @@ namespace MyWpfApp.Tests
 
                 // Verify that for each file at least one split PDF exists in output dir
                 var outputs = Directory.Exists(_outputDir) ? Directory.GetFiles(_outputDir, "*.pdf") : Array.Empty<string>();
-                Assert.True(outputs.Length > 0, "Expected split files in output directory.");
+                Assert.Equal(fileCount, outputs.Length);
             }
             finally
             {

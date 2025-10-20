@@ -10,12 +10,12 @@ namespace MyWpfApp.Model
     {
         private readonly string _inputDirectory;
         private readonly string _archiveDirectory;
-        private readonly PdfSplitter _pdfSplitter;
+        private readonly string _outputDirectory;
         private readonly FileSystemWatcher _watcher;
         private readonly CancellationTokenSource _cts;
 
         // Poll input directory for new PDF file, archive it, pass it to PdfSplitter, log actions/errors
-        public PollAndArchive(string inputDirectory, string archiveDirectory)
+        public PollAndArchive(string inputDirectory, string archiveDirectory, string outputDirectory)
         {
             // Checking if input and archive directories exist
             if (!Directory.Exists(inputDirectory))
@@ -25,7 +25,7 @@ namespace MyWpfApp.Model
 
             _inputDirectory = inputDirectory;
             _archiveDirectory = archiveDirectory;
-            _pdfSplitter = new PdfSplitter();
+            _outputDirectory = outputDirectory;
             _cts = new CancellationTokenSource();
 
             _watcher = new FileSystemWatcher(_inputDirectory, "*.pdf")
@@ -37,13 +37,8 @@ namespace MyWpfApp.Model
 
         // These are necessary for now since maxPages and the temp outputDirectory aren't global values
         // Once we have these configurable as settings we can remove these variables
-        private int _maxPages;
-        private string _outputDirectory;
-
-        public void StartWatching(int maxPages, string outputDirectory)
+        public void StartWatching()
         {
-            _maxPages = maxPages;
-            _outputDirectory = outputDirectory;
             _watcher.EnableRaisingEvents = true;
             Debug.WriteLine("Started watching for new PDF files.");
         }
@@ -117,9 +112,17 @@ namespace MyWpfApp.Model
 
                 token.ThrowIfCancellationRequested();
 
-                // Passsing to PdfSplitter, again in another thread
-                await Task.Run(() => _pdfSplitter.SplitPdf(fullPath, _outputDirectory, _maxPages), token).ConfigureAwait(false);
-                Debug.WriteLine($"Split PDF: {fullPath} into {_outputDirectory}");
+                // Move PDF to output directory
+                string outputPath = Path.Combine(_outputDirectory, Path.GetFileName(fullPath));
+                if (!File.Exists(outputPath))
+                {
+                    await Task.Run(() => File.Move(fullPath, outputPath), token).ConfigureAwait(false);
+                    Debug.WriteLine($"Moved PDF: {fullPath} -> {outputPath}");
+                }
+                else
+                {
+                    Debug.WriteLine($"Output already contains: {outputPath}");
+                }
             }
             catch (OperationCanceledException)
             {
