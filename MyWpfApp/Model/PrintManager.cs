@@ -13,7 +13,7 @@ namespace MyWpfApp.Model
         //set of all jobs
         //set of all printers
 
-        //queues a job
+        //queues a job 
         public void QueueJob(Job job)
         {
 
@@ -31,7 +31,7 @@ namespace MyWpfApp.Model
 
         }
 
-        //set job printer
+        //sets a job to a printer
         public void SetJobPrinter(Guid jobId, string printerName)
         {
 

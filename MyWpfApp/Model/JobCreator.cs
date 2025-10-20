@@ -32,7 +32,7 @@ namespace MyWpfApp.Model
 
             var splitFiles = await Task.Run(() => m_pdfSplitter.SplitPdf(inputPdfPath, AppSettings.JobDir, AppSettings.MaxPages));
 
-            var job = new Job(printerName, splitFiles, simplex);
+            var job = new Job(printerName, splitFiles, simplex, pdfName);
             return job;
         }
 
