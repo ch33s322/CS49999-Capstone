@@ -3,6 +3,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using MyWpfApp.Model;
 
 namespace FileSystem.ViewModel
 {
@@ -17,19 +18,22 @@ namespace FileSystem.ViewModel
 
         public FileSyetemViewModel()
         {
+            
             RootItems = new ObservableCollection<FileSystemItem>();
-
-            foreach (var drive in DriveInfo.GetDrives())
+            //ensure jobwell directory exists
+            if (!Directory.Exists(AppSettings.JobWell))
             {
-                var item = new FileSystemItem
-                {
-                    Name = drive.Name,
-                    FullPath = drive.Name,
-                    IsDirectory = true,
-                    Children = new ObservableCollection<FileSystemItem> { null } // dummy to show expand arrow
-                };
-                RootItems.Add(item);
+                AppSettings.EnsureDirectoriesExist();
             }
+
+            var rootItem = new FileSystemItem
+            {
+                Name = Path.GetFileName(AppSettings.JobWell),
+                FullPath = AppSettings.JobWell,
+                IsDirectory = true,
+                Children = new ObservableCollection<FileSystemItem> { null } // dummy to show expand arrow
+            };
+            RootItems.Add(rootItem);
         }
 
         protected virtual void OnPropertyChanged(string propertyName)
