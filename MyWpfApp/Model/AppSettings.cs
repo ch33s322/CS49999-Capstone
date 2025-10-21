@@ -20,6 +20,10 @@ namespace MyWpfApp.Model
         public static string ArchiveDir => Path.Combine(ExeFolder, "ArchivedPDFs");
         //folder path to jobs folder
         public static string JobDir => Path.Combine(ExeFolder, "JobsDir");
+        //folder path to printers folder
+        public static string PrinterDir => Path.Combine(ExeFolder, "PrinterDir");
+        // file that persists the list of printers and their associated jobs
+        public static string PrinterStoreFile => Path.Combine(PrinterDir, "printers.json");
         //number of pages we are doing per split
         public static int MaxPages { get; set; } = 1000;
 
@@ -35,6 +39,7 @@ namespace MyWpfApp.Model
             Directory.CreateDirectory(JobWell);
             Directory.CreateDirectory(ArchiveDir);
             Directory.CreateDirectory(JobDir);
+            Directory.CreateDirectory(PrinterDir);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyWpfApp.Model;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -27,6 +28,10 @@ namespace Printer.Model
                 }
             }
         }
+
+        //list of jobs assigned to this printer
+        public List<Job> Jobs { get; set; } = new List<Job>();
+
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

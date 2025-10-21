@@ -101,6 +101,9 @@
                     <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,49,0,0" FontSize="12" />
                     <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
                     <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,71,0,0" FontSize="12" />
+                    <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,94,0,0" FontSize="12"/>
+                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="310,94,0,0" Click="AddPrinterButton_Click"/>
                 </Grid>
             </TabItem>
         </TabControl>
