@@ -62,19 +62,48 @@
 
                     <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="900" Grid.Column="2">
                         <DataGrid Name="PrintJobManager" 
-                      ItemsSource="{Binding AvailablePrinters}" 
-                      Height="638" Width="896" 
-                      VerticalAlignment="Top" 
-                      HorizontalAlignment="Left" 
-                      SelectionChanged="PrintJobManager_SelectionChanged"
-                      AutoGenerateColumns="False">
+                                  ItemsSource="{Binding AvailablePrinters}" 
+                                  Height="638" Width="896" 
+                                  VerticalAlignment="Top" 
+                                  HorizontalAlignment="Left" 
+                                  SelectionChanged="PrintJobManager_SelectionChanged"
+                                  AutoGenerateColumns="False"
+                                  RowDetailsVisibilityMode="Visible"
+                                  CanUserAddRows="False"
+                                  IsReadOnly="True">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="50"/>
-                                <DataGridTextColumn Header="File Name"  Width="200"/>
-                                <DataGridTextColumn Header="File Type"  Width="100"/>
-                                <DataGridTextColumn Header="Pages"  Width="50"/>
-                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="50"/>
+                                <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="200"/>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120"/>
+                                <DataGridTextColumn Header="Job Count" Binding="{Binding Jobs.Count}" Width="80"/>
                             </DataGrid.Columns>
+
+                            <!-- Row details show the list of jobs for each printer -->
+                            <DataGrid.RowDetailsTemplate>
+                                <DataTemplate>
+                                    <Border Margin="8,4,8,8" Padding="6" BorderBrush="#DDD" BorderThickness="1" Background="#FFF">
+                                        <ItemsControl ItemsSource="{Binding Jobs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Expander Header="{Binding OrgPdfName}" IsExpanded="False" Margin="0,6,0,6">
+                                                        <StackPanel Margin="8,4,0,4">
+                                                            <TextBlock Text="{Binding dateTime}" FontSize="11" Foreground="Gray" />
+                                                            <TextBlock Text="Sections:" FontWeight="SemiBold" Margin="0,6,0,2"/>
+                                                            <ItemsControl ItemsSource="{Binding fileNames}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock Text="{Binding}" Margin="8,2,0,2"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Expander>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGrid.RowDetailsTemplate>
+
                             <DataGrid.DataContext>
                                 <vm:PrinterViewModel/>
                             </DataGrid.DataContext>
@@ -93,17 +122,21 @@
             <!-- Tab 3  -->
             <TabItem Header="Settings Page">
                 <Grid>
-                    <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                    <TextBox Name="InputDir" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged"/>
-                    <Label Content="Job Well" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                    <TextBox Name="JobWell" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,27,0,0" FontSize="12" />
-                    <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,49,0,0" FontSize="12" />
-                    <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="100,71,0,0" FontSize="12" />
-                    <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="100,94,0,0" FontSize="12"/>
-                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="310,94,0,0" Click="AddPrinterButton_Click"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="8*"/>
+                        <ColumnDefinition Width="201*"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="InputDir" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
+                    <Label Content="Job Well" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="JobWell" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
+                    <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
+                    <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,71,0,0" FontSize="12" Grid.Column="1" />
+                    <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
+                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>

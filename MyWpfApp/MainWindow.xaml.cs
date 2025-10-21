@@ -59,9 +59,67 @@ public partial class MainWindow : Window
 
         }
 
-        private void SendJobClick(object sender, RoutedEventArgs e)
+        // Queue a job: create via JobCreator.MakeJobAsync then hand to PrintManager.QueueJob
+        private async void SendJobClick(object sender, RoutedEventArgs e)
         {
-            //add code for sending the jobs
+            // Determine selected printer from the PrinterSelect combobox
+            var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
+            string printerName = selectedPrinter?.Name;
+
+            if (string.IsNullOrWhiteSpace(printerName))
+            {
+                MessageBox.Show("Select a target printer from the printer dropdown before sending a job.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Determine selected file from the tree view
+            var selectedItem = fileTreeView.SelectedItem as FileSystemItem;
+            if (selectedItem == null)
+            {
+                MessageBox.Show("Select a file from the file tree to create a job from.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // The JobCreator expects the pdf name to be present in AppSettings.JobWell.
+            // Use the selected item's Name as the PDF file name.
+            string pdfName = selectedItem.Name;
+            if (string.IsNullOrWhiteSpace(pdfName))
+            {
+                MessageBox.Show("Selected file has no name.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Determine simplex/duplex. Checked == duplex (label shows "Duplex"), so Simplex = not checked.
+            bool simplex = !(SimplexDuplexCheckBox.IsChecked ?? false);
+
+            try
+            {
+                // Create job (this may do IO and CPU work; call async method)
+                var pdfSplitter = new PdfSplitter();
+                var creator = new JobCreator(pdfSplitter);
+                var job = await creator.MakeJobAsync(printerName, pdfName, simplex).ConfigureAwait(false);
+
+                // Queue the job on the UI thread
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    _printManager.QueueJob(job);
+
+                    // Refresh view-models so UI reflects new job (the app currently creates separate VMs in XAML)
+                    var vm = new Printer.ViewModel.PrinterViewModel();
+                    PrinterSelect.DataContext = vm;
+                    PrintJobManager.DataContext = vm;
+                });
+
+                MessageBox.Show($"Job created and queued for printer '{printerName}'.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (System.IO.FileNotFoundException fnf)
+            {
+                MessageBox.Show($"Source PDF not found in JobWell: {fnf.FileName}", "Send Job", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to create or queue job: {ex.Message}", "Send Job", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void DirectorySelectTextChanged(object sender, TextChangedEventArgs e)
