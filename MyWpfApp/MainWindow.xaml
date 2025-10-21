@@ -22,7 +22,11 @@
                         <ColumnDefinition Width="463*"/>
                     </Grid.ColumnDefinitions>
 
-                    <ComboBox Name="PrinterSelect" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged"></ComboBox>
+                    <ComboBox Name="PrinterSelect" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged">
+                        <ComboBox.DataContext>
+                            <vm:PrinterViewModel/>
+                        </ComboBox.DataContext>
+                    </ComboBox>
 
                     <CheckBox Name="SimplexDuplexCheckBox" Checked="SimplexDuplexCheckBoxChecked" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="9,26,0,0" Height="14" Width="15" RenderTransformOrigin="0.733,-2.067" Grid.Column="1"/>
 
