@@ -2,7 +2,9 @@
 using MyWpfApp.Model;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Printing;
+using System.IO;
 using System.Linq;
 using System.Printing;
 using System.Text;
@@ -30,8 +32,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         _printManager = new PrintManager();
 
-        // Populate the combo with installed printers on the machine
-        try
+            //Directory.Delete(AppSettings.JobDir, true);
+            //Directory.Delete(AppSettings.PrinterDir, true);
+            //File.WriteAllText(AppSettings., string.Empty);
+            // Populate the combo with installed printers on the machine
+            try
         {
             var installed = PrinterSettings.InstalledPrinters;
             var list = new List<string>();
@@ -65,6 +70,7 @@ public partial class MainWindow : Window
             // Determine selected printer from the PrinterSelect combobox
             var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
             string printerName = selectedPrinter?.Name;
+            Debug.WriteLine(printerName);
 
             if (string.IsNullOrWhiteSpace(printerName))
             {
@@ -98,12 +104,13 @@ public partial class MainWindow : Window
                 var pdfSplitter = new PdfSplitter();
                 var creator = new JobCreator(pdfSplitter);
                 var job = await creator.MakeJobAsync(printerName, pdfName, simplex).ConfigureAwait(false);
-
+                Debug.WriteLine("Ouputting JOB...");
+                Debug.WriteLine(job.ToString());
                 // Queue the job on the UI thread
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     _printManager.QueueJob(job);
-
+                    Debug.WriteLine("Job queued.");
                     // Refresh view-models so UI reflects new job (the app currently creates separate VMs in XAML)
                     var vm = new Printer.ViewModel.PrinterViewModel();
                     PrinterSelect.DataContext = vm;

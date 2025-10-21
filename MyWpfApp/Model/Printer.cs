@@ -36,5 +36,10 @@ namespace Printer.Model
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public override string ToString()
+        {
+            return $"Printer Name: {Name}, Status: {Status}, Jobs Count: {Jobs.Count}";
+        }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace MyWpfApp.Model
 {
@@ -31,8 +32,12 @@ namespace MyWpfApp.Model
             }
 
             var splitFiles = await Task.Run(() => m_pdfSplitter.SplitPdf(inputPdfPath, AppSettings.JobDir, AppSettings.MaxPages));
-
+            Debug.WriteLine("Outputting Job Properties befor input...");
+            Debug.WriteLine(printerName);
+            Debug.WriteLine(splitFiles);
             var job = new Job(printerName, splitFiles, simplex, pdfName);
+            Debug.WriteLine("Outputting Job Properties after input...");
+            Debug.WriteLine(job.ToString());
             return job;
         }
 

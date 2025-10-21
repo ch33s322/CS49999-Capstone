@@ -79,7 +79,7 @@ namespace Printer.ViewModel
                     }
 
                     // Query WMI for that specific printer
-                    string escaped = printerName.Replace("\\", "\\\\");
+                    string escaped = printerName.Replace("\\", "\\\\"); 
                     string query = $"SELECT Name, PrinterStatus FROM Win32_Printer WHERE Name = '{escaped}'";
                     ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
 
@@ -93,7 +93,9 @@ namespace Printer.ViewModel
                         var newPrinter = new Model.Printer
                         {
                             Name = name,
-                            Status = GetPrinterStatus(wmiStatus)
+                            Status = GetPrinterStatus(wmiStatus),
+                            // populate Jobs from persisted store so UI shows associated jobs
+                            Jobs = pinfo.Jobs ?? new List<Job>()
                         };
 
                         AvailablePrinters.Add(newPrinter);
@@ -106,7 +108,9 @@ namespace Printer.ViewModel
                         var newPrinter = new Model.Printer
                         {
                             Name = printerName,
-                            Status = "Not Present"
+                            Status = "Not Present",
+                            // populate Jobs from persisted store so UI shows associated jobs even if printer not present
+                            Jobs = pinfo.Jobs ?? new List<Job>()
                         };
                         AvailablePrinters.Add(newPrinter);
 
