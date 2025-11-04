@@ -20,39 +20,39 @@ using System.Windows.Shapes;
 
 namespace MyWpfApp
 {
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
-{
-    private readonly PrintManager _printManager;
-
-    public MainWindow()
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
-        _printManager = new PrintManager();
+        private readonly PrintManager _printManager;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            _printManager = new PrintManager();
 
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
-            // Populate the combo with installed printers on the machine
+            // Populate the add printers combo with installed printers on the machine
             try
-        {
-            var installed = PrinterSettings.InstalledPrinters;
-            var list = new List<string>();
-            foreach (var name in installed)
             {
-                list.Add(name.ToString());
+                var installed = PrinterSettings.InstalledPrinters;
+                var list = new List<string>();
+                foreach (var name in installed)
+                {
+                    list.Add(name.ToString());
+                }
+                printerPickComboBox.ItemsSource = list;
+                if (list.Any()) printerPickComboBox.SelectedIndex = 0;
             }
-            printerPickComboBox.ItemsSource = list;
-            if (list.Any()) printerPickComboBox.SelectedIndex = 0;
+            catch (Exception ex)
+            {
+                // non-fatal; still allow manual input or other flows
+                System.Diagnostics.Debug.WriteLine($"Failed to enumerate installed printers: {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            // non-fatal; still allow manual input or other flows
-            System.Diagnostics.Debug.WriteLine($"Failed to enumerate installed printers: {ex.Message}");
-        }
-    }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
         {
@@ -176,12 +176,38 @@ public partial class MainWindow : Window
             var vm = new Printer.ViewModel.PrinterViewModel();
             PrinterSelect.DataContext = vm;
             PrintJobManager.DataContext = vm;
+            currentPrinterPickComboBox.DataContext = vm;
 
             // Optionally remove the added item from the dropdown or keep it
-            // printerPickComboBox.Items.Refresh();
+            //printerPickComboBox.Items.Refresh();
 
             MessageBox.Show($"Printer '{name}' added.", "Add Printer", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        
+
+        private void RemovePrinterButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedPrinter = currentPrinterPickComboBox.SelectedItem as Printer.Model.Printer;
+            string printerName = selectedPrinter?.Name;
+            if (string.IsNullOrWhiteSpace(printerName))
+            {
+                MessageBox.Show("Select a printer from the printer dropdown before clicking Remove.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            try
+            {
+                _printManager.RemovePrinter(printerName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to remove printer: {ex.Message}", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            // Refresh the PrinterViewModel instances used in the UI so the removed printer disappears.
+            var vm = new Printer.ViewModel.PrinterViewModel();
+            PrinterSelect.DataContext = vm;
+            PrintJobManager.DataContext = vm;
+            currentPrinterPickComboBox.DataContext = vm;
+            MessageBox.Show($"Printer '{printerName}' removed.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }

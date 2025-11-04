@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace MyWpfApp.Tests
 {
+    [Collection("PrinterTestsCollection")]
     public class PrinterTests
     {
         [Fact]
@@ -88,7 +90,8 @@ namespace MyWpfApp.Tests
                 }
 
                 var pm = new PrintManager();
-                pm.AddPrinter(printerName);
+                var added = pm.AddPrinter(printerName);
+                Assert.True(added);
 
                 var printers = pm.getAllPrinters();
                 Assert.Contains(printerName, printers);
@@ -109,6 +112,152 @@ namespace MyWpfApp.Tests
                             File.Delete(storePath);
                     }
 
+                    var printerDir = Path.Combine(AppSettings.PrinterDir, printerName);
+                    if (Directory.Exists(printerDir))
+                        Directory.Delete(printerDir, true);
+                }
+                catch
+                {
+                    // suppress cleanup exceptions
+                }
+            }
+        }
+
+        [Fact]
+        public void TestDuplicatePrinterCreation()
+        {
+            var storePath = AppSettings.PrinterStoreFile;
+            var backupPath = storePath + ".bak";
+            bool hadBackup = false;
+            var printerName = "DuplicatePrinterTest";
+            try
+            {
+                // Backup persisted store if exists
+                if (File.Exists(storePath))
+                {
+                    File.Copy(storePath, backupPath, overwrite: true);
+                    hadBackup = true;
+                }
+                var pm = new PrintManager();
+                var added = pm.AddPrinter(printerName);
+                Assert.True(added);
+
+                // Attempt to add the same printer again and expect false return
+                added = pm.AddPrinter(printerName);
+                Assert.False(added);
+
+            }
+            finally
+            {
+                // cleanup persisted store and remove created printer directory
+                try
+                {
+                    if (hadBackup)
+                    {
+                        File.Copy(backupPath, storePath, overwrite: true);
+                        File.Delete(backupPath);
+                    }
+                    else
+                    {
+                        if (File.Exists(storePath))
+                            File.Delete(storePath);
+                    }
+                    var printerDir = Path.Combine(AppSettings.PrinterDir, printerName);
+                    if (Directory.Exists(printerDir))
+                        Directory.Delete(printerDir, true);
+                }
+                catch
+                {
+                    // suppress cleanup exceptions
+                }
+            }
+        }
+
+        [Fact]
+        public void TestBadPrinterRemoval()
+        {
+            var storePath = AppSettings.PrinterStoreFile;
+            var backupPath = storePath + ".bak";
+            bool hadBackup = false;
+            var printerName = "NonExistentPrinter";
+            try
+            {
+                // Backup persisted store if exists
+                if (File.Exists(storePath))
+                {
+                    File.Copy(storePath, backupPath, overwrite: true);
+                    hadBackup = true;
+                }
+                var pm = new PrintManager();
+                // Attempt to remove a non-existent printer and expect null return
+                var removedPrinter = pm.RemovePrinter(printerName);
+                Assert.Null(removedPrinter);
+            }
+            finally
+            {
+                // cleanup persisted store
+                try
+                {
+                    if (hadBackup)
+                    {
+                        File.Copy(backupPath, storePath, overwrite: true);
+                        File.Delete(backupPath);
+                    }
+                    else
+                    {
+                        if (File.Exists(storePath))
+                            File.Delete(storePath);
+                    }
+                }
+                catch
+                {
+                    // suppress cleanup exceptions
+                }
+            }
+        }
+
+        [Fact]
+        public void TestPrinterRemoval()
+        {
+            var storePath = AppSettings.PrinterStoreFile;
+            var backupPath = storePath + ".bak";
+            bool hadBackup = false;
+            var printerName = "PrinterToRemove";
+            try
+            {
+                // Backup persisted store if exists
+                if (File.Exists(storePath))
+                {
+                    File.Copy(storePath, backupPath, overwrite: true);
+                    hadBackup = true;
+                }
+                var pm = new PrintManager();
+                pm.AddPrinter(printerName);
+                // Verify printer added
+                var printers = pm.getAllPrinters();
+                Assert.Contains(printerName, printers);
+                // Now remove the printer
+                var removedPrinter = pm.RemovePrinter(printerName);
+                Assert.NotNull(removedPrinter);
+                // Verify printer removed
+                printers = pm.getAllPrinters();
+                Assert.DoesNotContain(printerName, printers);
+            }
+            finally
+            {
+                // cleanup persisted store and remove created printer directory
+                try
+                {
+                    if (hadBackup)
+                    {
+                        File.Copy(backupPath, storePath, overwrite: true);
+                        File.Delete(backupPath);
+                    }
+                    else
+                    {
+                        if (File.Exists(storePath))
+                            File.Delete(storePath);
+                    }
                     var printerDir = Path.Combine(AppSettings.PrinterDir, printerName);
                     if (Directory.Exists(printerDir))
                         Directory.Delete(printerDir, true);
@@ -231,6 +380,23 @@ namespace MyWpfApp.Tests
                     // suppress cleanup exceptions
                 }
             }
+        }
+
+        [Fact]
+        public void TestPrinterStatusUpdate()
+        {
+            var printer = new Printer.Model.Printer
+            {
+                Name = "StatusPrinter",
+                Status = "Idle"
+            };
+            Assert.Equal("Idle", printer.Status);
+            // Update status
+            printer.Status = "Printing";
+            Assert.Equal("Printing", printer.Status);
+            // Update status again
+            printer.Status = "Error";
+            Assert.Equal("Error", printer.Status);
         }
     }
 }

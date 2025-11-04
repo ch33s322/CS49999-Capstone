@@ -139,7 +139,7 @@ namespace MyWpfApp.Model
         }
 
         // adds printer to printer set (and persists the Printer including its Jobs list)
-        public void AddPrinter(string PrinterName)
+        public bool AddPrinter(string PrinterName)
         {
             if (string.IsNullOrWhiteSpace(PrinterName)) throw new ArgumentException(nameof(PrinterName));
 
@@ -149,7 +149,7 @@ namespace MyWpfApp.Model
                 Directory.CreateDirectory(AppSettings.PrinterDir);
             }
 
-            // create printer directory if missing (keeps behavior from earlier)
+            // create printer directory if missing 
             string printerPath = Path.Combine(AppSettings.PrinterDir, PrinterName);
             if (!Directory.Exists(printerPath))
             {
@@ -163,19 +163,22 @@ namespace MyWpfApp.Model
                     var newPrinter = new PrinterClass { Name = PrinterName, Status = "Unknown" };
                     _printers.Add(newPrinter);
                     SavePrinterStore();
+                    return true;
                 }
             }
+
+            return false;
         }
 
         // removes printer and moves its jobs to the unassigned printer
-        public void RemovePrinter(string printerName)
+        public PrinterClass RemovePrinter(string printerName)
         {
             if (string.IsNullOrWhiteSpace(printerName)) throw new ArgumentException(nameof(printerName));
 
             lock (_lock)
             {
                 var entry = _printers.FirstOrDefault(p => string.Equals(p.Name, printerName, StringComparison.OrdinalIgnoreCase));
-                if (entry == null) return;
+                if (entry == null) return null;
 
                 var unassigned = _printers.FirstOrDefault(p => string.Equals(p.Name, UnassignedPrinterName, StringComparison.OrdinalIgnoreCase));
                 if (unassigned == null)
@@ -207,6 +210,8 @@ namespace MyWpfApp.Model
                 {
                     // ignore IO errors
                 }
+
+                return entry;
             }
         }
 
