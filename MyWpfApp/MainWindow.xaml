@@ -59,7 +59,7 @@
                 <DataGridTextColumn Header="File Type" Binding="{Binding FileType}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>-->
-
+                    <!-- Print Manager GroupBox-->
                     <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="900" Grid.Column="2">
                         <DataGrid Name="PrintJobManager" 
                                   ItemsSource="{Binding AvailablePrinters}" 
@@ -137,6 +137,13 @@
                     <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                     <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
                     <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+                    <Label Content="Remove Printer" Margin="0,120,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,120,0,0" FontSize="12" Grid.Column="1">
+                        <ComboBox.DataContext>
+                            <vm:PrinterViewModel/>
+                        </ComboBox.DataContext>
+                    </ComboBox>
+                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>
