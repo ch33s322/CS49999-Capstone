@@ -64,6 +64,43 @@ namespace MyWpfApp
 
         }
 
+
+        private void RightClickPrintJob(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem )
+            {
+                // Do something with 'job'
+                MessageBox.Show($"Printing job");
+            }
+        }
+
+        private void RightClickRemoveJob(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                // Do something with 'job'
+                MessageBox.Show($"Removing job");
+            }
+        }
+
+        private void RightClickViewJob(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                // Do something with 'job'
+                MessageBox.Show($"Viewing job");
+            }
+        }
+
+        private void RightClickMoveJob(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                // Do something with 'job'
+                MessageBox.Show($"Moving job");
+            }
+        }
+
         // Queue a job: create via JobCreator.MakeJobAsync then hand to PrintManager.QueueJob
         private async void SendJobClick(object sender, RoutedEventArgs e)
         {

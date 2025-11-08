@@ -48,6 +48,7 @@
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem">
                                 <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                                <Setter Property="IsExpanded" Value="true" />
                             </Style>
                         </TreeView.ItemContainerStyle>
                     </TreeView>
@@ -71,11 +72,33 @@
                                   RowDetailsVisibilityMode="Visible"
                                   CanUserAddRows="False"
                                   IsReadOnly="True">
+                           
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="200"/>
                                 <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120"/>
                                 <DataGridTextColumn Header="Job Count" Binding="{Binding Jobs.Count}" Width="80"/>
                             </DataGrid.Columns>
+
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu>
+                                                <ContextMenu.Resources>
+                                                    <Style TargetType="MenuItem">
+                                                        <Setter Property="DataContext" Value="{x:Null}" />
+                                                    </Style>
+                                                </ContextMenu.Resources>
+                                                <MenuItem Header="Print Job"  />
+                                                <MenuItem Header="Remove Job" />
+                                                <MenuItem Header="View Job"    />
+                                                <MenuItem Header="Move Job"    />
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.RowStyle>
 
                             <!-- Row details show the list of jobs for each printer -->
                             <DataGrid.RowDetailsTemplate>
@@ -113,14 +136,8 @@
                     </GroupBox>
                 </Grid>
             </TabItem>
-
-            <!-- Tab 2 -->
-            <TabItem Header="Admin Page">
-                <TextBox Text="Put admin Page here"/>
-            </TabItem>
-
-            <!-- Tab 3  -->
-            <TabItem Header="Settings Page">
+            <!-- Tab 2  -->
+            <TabItem Header="Settings">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="8*"/>

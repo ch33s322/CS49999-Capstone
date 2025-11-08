@@ -2,9 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyWpfApp", "MyWpfApp\MyWpfApp.csproj", "{9F5AE903-2AA5-C1C8-F22F-0CA47D6797C5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyWpfApp", "MyWpfApp\MyWpfApp.csproj", "{9F5AE903-2AA5-C1C8-F22F-0CA47D6797C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyWpfApp.Tests", "MyWpfApp.Tests\MyWpfApp.Tests.csproj", "{CB9E3314-E74E-4FBC-963C-7BB30D3EF5DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyWpfApp.Tests", "MyWpfApp.Tests\MyWpfApp.Tests.csproj", "{CB9E3314-E74E-4FBC-963C-7BB30D3EF5DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
