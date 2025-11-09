@@ -1,4 +1,7 @@
-﻿using System;
+﻿using MyWpfApp.Model;
+using PdfSharpCore.Pdf;
+using Printer.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,8 +10,9 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
 using PrinterClass = Printer.Model.Printer;
-using Printer.ViewModel;
-using MyWpfApp.Model;
+using System.Threading;
+using System.Diagnostics;
+using System.Printing;
 
 namespace MyWpfApp.Model
 {
@@ -19,14 +23,16 @@ namespace MyWpfApp.Model
         // In-memory store of Printer objects (each Printer has a List<Job> Jobs)
         private List<PrinterClass> _printers = new List<PrinterClass>();
 
-        // Special name used for unassigned jobs
+        // name used for unassigned jobs
         private const string UnassignedPrinterName = "";
 
+        public string AdobeReaderPath { get; private set; }
         public PrintManager()
         {
             AppSettings.EnsureDirectoriesExist();
             LoadPrinterStore();
             EnsureUnassignedPrinterExists();
+            AdobeReaderPath = GetAdobeReaderPath();
         }
 
         private void EnsureUnassignedPrinterExists()
@@ -42,7 +48,6 @@ namespace MyWpfApp.Model
             }
         }
 
-        // --- Public API ---
 
         // queues a job 
         public void QueueJob(Job job)
@@ -320,6 +325,211 @@ namespace MyWpfApp.Model
                     // swallow IO errors; consider logging in real app
                 }
             }
+        }
+
+        private string GetAdobeReaderPath()
+        {
+            // Attempt to find Adobe Reader executable path from registry
+            try
+            {
+                // Check 32-bit registry view
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
+                {
+                    if (key != null)
+                    {
+                        var path = key.GetValue("") as string;
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
+
+                // Check 64-bit registry view
+                using (var key = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64)
+                    .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
+                {
+                    if (key != null)
+                    {
+                        var path = key.GetValue("") as string;
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
+
+                // Check WOW6432Node for 32-bit Adobe Reader on 64-bit Windows
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
+                {
+                    if (key != null)
+                    {
+                        var path = key.GetValue("") as string;
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
+
+                // check path for full Acrobat if reader not found
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe"))
+                {
+                    if (key != null)
+                    {
+                        var path = key.GetValue("") as string;
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            return path;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore registry access errors
+            }
+
+            return null;
+        }
+
+        // -- Printing --
+
+        public bool PrintJob(string pdfName, string printerName)
+        {
+            // validating job and adobe reader path
+            if (string.IsNullOrWhiteSpace(pdfName)) throw new ArgumentException(nameof(pdfName));
+            
+            var inputPdfPath = Path.Combine(AppSettings.JobDir, pdfName);
+            if (!File.Exists(inputPdfPath)) throw new FileNotFoundException("PDF file not found in JobWell.", inputPdfPath);
+            if (string.IsNullOrWhiteSpace(AdobeReaderPath)) throw new InvalidOperationException("Adobe Reader path not set.");
+            if (!File.Exists(AdobeReaderPath)) throw new FileNotFoundException("Adobe Reader executable not found.", AdobeReaderPath);
+
+            // command line arguments for adobe reader
+            string arguments = $"/t \"{inputPdfPath}\" \"{printerName}\"";
+
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = AdobeReaderPath,
+                Arguments = arguments,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+
+            Debug.WriteLine("starting process for print");
+            System.Diagnostics.Process proc = null;
+            try
+            {
+                proc = System.Diagnostics.Process.Start(psi);
+                if (proc == null)
+                    throw new InvalidOperationException("Failed to start Adobe Reader process.");
+
+                TimeSpan timeoutMs = TimeSpan.FromSeconds(120); // 120 seconds timeout for printing
+
+                bool completed;
+                try
+                {
+                    completed = WaitForPrintJobCompletion(printerName, pdfName, timeoutMs);
+                }
+                catch
+                {
+                    // propagate any exceptions from the spooler waiting logic (e.g. job error states)
+                    try { if (proc != null && !proc.HasExited) proc.Kill(); Debug.WriteLine("process timed out"); } catch { }
+                    throw;
+                }
+
+                // timed out waiting for spooler -> do not throw, return false per requirement
+                if (!completed)
+                {
+                    try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
+                    return false;
+                }
+
+                // If process has exited, verify exit code; otherwise treat as success since we observed the print job
+                try
+                {
+                    if (proc.HasExited)
+                    {
+                        if (proc.ExitCode != 0)
+                            throw new InvalidOperationException($"Adobe Reader exited with code {proc.ExitCode} when printing.");
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Any unexpected error when querying the process state should be surfaced as an exception
+                    throw new InvalidOperationException("Failed to verify Adobe Reader process state.", ex);
+                }
+
+                return true;
+            }
+            finally
+            {
+                // Best-effort cleanup: if process still running, attempt to kill it.
+                try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
+            }
+        }
+
+        private bool WaitForPrintJobCompletion(string printerName, string documentName, TimeSpan timeout)
+        {
+            var server = new LocalPrintServer();
+            PrintQueue queue;
+            try
+            {
+                queue = server.GetPrintQueue(printerName);
+            }
+            catch
+            {
+                return false; // printer not available
+            }
+
+            var sw = Stopwatch.StartNew();
+            int? observedJobId = null;
+
+            while (sw.Elapsed < timeout)
+            {
+                try
+                {
+                    queue.Refresh();
+                    var jobs = queue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
+
+                    // try to find the job by name first, then fallback to submitter + time heuristics
+                    var job = jobs.FirstOrDefault(j => string.Equals(j.Name, documentName, StringComparison.OrdinalIgnoreCase))
+                              ?? jobs.FirstOrDefault(j => j.Submitter == Environment.UserName && (observedJobId == null || j.JobIdentifier == observedJobId));
+
+                    if (job != null)
+                    {
+                        observedJobId = job.JobIdentifier;
+
+                        // job finished successfully (removed from spooler) or reported completed
+                        if (job.IsCompleted || job.IsDeleted) return true;
+
+                        // Some environments set JobStatus flags; check for error states
+                        if (job.JobStatus.HasFlag(PrintJobStatus.Error) || job.JobStatus.HasFlag(PrintJobStatus.Offline))
+                            throw new InvalidOperationException($"Print job in error state: {job.JobStatus}");
+
+                        // number of pages may be available as an indicator
+                        if (job.NumberOfPages > 0 && job.IsCompleted) return true;
+                    }
+                    else
+                    {
+                        // if we previously saw a job but now it is gone, assume completion
+                        if (observedJobId != null) return true;
+                    }
+                }
+                catch
+                {
+                    // transient spooler errors — retry until timeout
+                }
+
+                Thread.Sleep(500);
+            }
+
+            return false; // timed out
         }
     }
 }

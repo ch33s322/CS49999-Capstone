@@ -53,8 +53,7 @@ namespace MyWpfApp.Tests
                 }
                 catch
                 {
-                    // suppress exceptions during cleanup to avoid masking test results;
-                    // in CI you might want to log failures here.
+                    // suppress cleanup exceptions
                 }
             }
         }
