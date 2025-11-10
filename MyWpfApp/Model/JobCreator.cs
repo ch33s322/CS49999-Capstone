@@ -12,7 +12,7 @@ namespace MyWpfApp.Model
     public class JobCreator
     {
         //reference to pdf splitter
-        private readonly PdfSplitter m_pdfSplitter;
+        private readonly PdfSplitter _pdfSplitter;
 
         // Tracks in-progress split tasks by absolute PDF path so the same PDF isn't split concurrently.
         // Key uses full path to avoid duplicates across relative names.
@@ -21,7 +21,7 @@ namespace MyWpfApp.Model
         //constructor
         public JobCreator(PdfSplitter pdfSplitter)
         {
-            m_pdfSplitter = pdfSplitter;
+            _pdfSplitter = pdfSplitter;
         }
 
         public Task<Job> MakeJobAsync(string printerName, string pdfName, bool simplex)
@@ -29,7 +29,7 @@ namespace MyWpfApp.Model
             if (string.IsNullOrWhiteSpace(pdfName)) throw new ArgumentException(nameof(pdfName));
 
             // normalize to absolute path inside JobWell — this is the key used to dedupe concurrent requests
-            var inputPdfPath = Path.Combine(AppSettings.JobWell, pdfName);
+            var inputPdfPath = Path.Combine(AppSettings.Instance.JobWell, pdfName);
             var key = Path.GetFullPath(inputPdfPath);
 
             // If a split for the same PDF is already running, return the existing task so callers wait on the same work.
@@ -43,19 +43,19 @@ namespace MyWpfApp.Model
             {
                 try
                 {
-                    var inputPdfPath = Path.Combine(AppSettings.JobWell, pdfName);
+                    var inputPdfPath = Path.Combine(AppSettings.Instance.JobWell, pdfName);
                     if (!File.Exists(inputPdfPath))
                     {
                         throw new FileNotFoundException("Pdf not found in JobWell", inputPdfPath);
                     }
 
-                    if (!Directory.Exists(AppSettings.JobDir))
+                    if (!Directory.Exists(AppSettings.Instance.JobDir))
                     {
-                        Directory.CreateDirectory(AppSettings.JobDir);
+                        Directory.CreateDirectory(AppSettings.Instance.JobDir);
                     }
 
                     // perform split on a threadpool thread
-                    var splitFiles = await Task.Run(() => m_pdfSplitter.SplitPdf(inputPdfPath, AppSettings.JobDir, AppSettings.MaxPages)).ConfigureAwait(false);
+                    var splitFiles = await Task.Run(() => _pdfSplitter.SplitPdf(inputPdfPath, AppSettings.Instance.JobDir, AppSettings.Instance.MaxPages)).ConfigureAwait(false);
 
                     var job = new Job(printerName, splitFiles, simplex, pdfName);
                     return job;
@@ -80,10 +80,10 @@ namespace MyWpfApp.Model
                 return;
 
             //build full path in JobWell
-            var fullPath = Path.Combine(AppSettings.JobWell, fileName);
+            var fullPath = Path.Combine(AppSettings.Instance.JobWell, fileName);
 
             //ensure the file is inside the JobWell directory
-            if (!fullPath.StartsWith(AppSettings.JobWell, StringComparison.OrdinalIgnoreCase))
+            if (!fullPath.StartsWith(AppSettings.Instance.JobWell, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Cannot delete files outside the JobWell directory.");
 
             if (File.Exists(fullPath))

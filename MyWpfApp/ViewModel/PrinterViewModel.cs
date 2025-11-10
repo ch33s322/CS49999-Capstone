@@ -47,7 +47,7 @@ namespace Printer.ViewModel
 
             try
             {
-                var storePath = AppSettings.PrinterStoreFile;
+                var storePath = AppSettings.Instance.PrinterStoreFile;
                 if (!File.Exists(storePath))
                 {
                     Debug.WriteLine("Persisted printer store not found; no printers to watch.");

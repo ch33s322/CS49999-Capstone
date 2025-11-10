@@ -14,32 +14,31 @@ namespace FileSystem.ViewModel
         public ObservableCollection<FileSystemItem> RootItems {
             get;
             set;
-            
         }
 
         private FileSystemWatcher _watcher;
 
         public FileSyetemViewModel()
         {
-            
+            //make filesystem viewmodel know the app settings object
             RootItems = new ObservableCollection<FileSystemItem>();
             //ensure jobwell directory exists
-            if (!Directory.Exists(AppSettings.JobWell))
+            if (!Directory.Exists(AppSettings.Instance.JobWell))
             {
-                AppSettings.EnsureDirectoriesExist();
+                AppSettings.Instance.EnsureDirectoriesExist();
             }
 
             var rootItem = new FileSystemItem
             {
-                Name = Path.GetFileName(AppSettings.JobWell),
-                FullPath = AppSettings.JobWell,
+                Name = Path.GetFileName(AppSettings.Instance.JobWell),
+                FullPath = AppSettings.Instance.JobWell,
                 IsDirectory = true,
                 Children = new ObservableCollection<FileSystemItem> { null } // dummy to show expand arrow
             };
             RootItems.Add(rootItem);
 
             //start watching for changes
-            InitializeWatcher(AppSettings.JobWell);
+            InitializeWatcher(AppSettings.Instance.JobWell);
 
         }
 
@@ -71,8 +70,8 @@ namespace FileSystem.ViewModel
             RootItems.Clear();
             var rootItem = new FileSystemItem
             {
-                Name = Path.GetFileName(AppSettings.JobWell),
-                FullPath = AppSettings.JobWell,
+                Name = Path.GetFileName(AppSettings.Instance.JobWell),
+                FullPath = AppSettings.Instance.JobWell,
                 IsDirectory = true,
                 Children = new ObservableCollection<FileSystemItem> { null }
             };

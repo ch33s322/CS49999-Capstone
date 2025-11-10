@@ -25,13 +25,19 @@ namespace MyWpfApp
     /// </summary>
     public partial class MainWindow : Window
     {
+        /*Objects we use*/
+        private JobCreator _jobCreator;
+        private PdfSplitter _pdfSplitter;
+        private PollAndArchive _pollAndArchive;
         private readonly PrintManager _printManager;
 
         public MainWindow()
-        {
-            InitializeComponent();
+        {    
+            _pdfSplitter = new PdfSplitter();
+            _jobCreator = new JobCreator(_pdfSplitter);
+            //_pollAndArchive = new PollAndArchive()
             _printManager = new PrintManager();
-
+            InitializeComponent();
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
@@ -138,9 +144,7 @@ namespace MyWpfApp
             try
             {
                 // Create job (this may do IO and CPU work; call async method)
-                var pdfSplitter = new PdfSplitter();
-                var creator = new JobCreator(pdfSplitter);
-                var job = await creator.MakeJobAsync(printerName, pdfName, simplex).ConfigureAwait(false);
+                var job = await _jobCreator.MakeJobAsync(printerName, pdfName, simplex).ConfigureAwait(false);
                 Debug.WriteLine("Ouputting JOB...");
                 Debug.WriteLine(job.ToString());
                 // Queue the job on the UI thread

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyWpfApp.Model;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,33 +8,54 @@ using System.Threading.Tasks;
 
 namespace MyWpfApp.Model
 {
-    public static class AppSettings
+    public class AppSettings
     {
-        private static readonly string ExeFolder = AppDomain.CurrentDomain.BaseDirectory;
+        //singleton instance
+        private static AppSettings _instance;
+        private static readonly object _lock = new object();
+        public static AppSettings Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        if (_instance == null)
+                        {
+                            _instance = new AppSettings();
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
+        //default constructor
+        private AppSettings()
+        {
+            InputDir = Path.Combine(ExeFolder, "InputDir");
+            JobWell = Path.Combine(ExeFolder, "JobWell");
+            ArchiveDir = Path.Combine(ExeFolder, "ArchivedPDFs");
+            JobDir = Path.Combine(ExeFolder, "JobsDir");
+            PrinterDir = Path.Combine(ExeFolder, "PrinterDir");
+            PrinterStoreFile = Path.Combine(ExeFolder, "printers.json");
+            MaxPages = 1000;
+        }
 
+        //data members
+        private readonly string ExeFolder = AppDomain.CurrentDomain.BaseDirectory;
+        public string InputDir { get; set; }
+        public string JobWell {  get; set; }
+        public string ArchiveDir { get; set; }
+        public string JobDir { get; set; }
+        public string PrinterDir { get; set; }
+        public string PrinterStoreFile { get; set; }
+        public int MaxPages { get; set; }
         /*Default folder paths*/
-        //folder path to input pdfs
-        public static string InputDir => Path.Combine(ExeFolder, "InputDir");
-        //folder path to output of polling and archive system
-        public static string JobWell => Path.Combine(ExeFolder, "JobWell");
-        //folder path to archive location
-        public static string ArchiveDir => Path.Combine(ExeFolder, "ArchivedPDFs");
-        //folder path to jobs folder
-        public static string JobDir => Path.Combine(ExeFolder, "JobsDir");
-        //folder path to printers folder
-        public static string PrinterDir => Path.Combine(ExeFolder, "PrinterDir");
-        // file that persists the list of printers and their associated jobs
-        public static string PrinterStoreFile => Path.Combine(PrinterDir, "printers.json");
-        //number of pages we are doing per split
-        public static int MaxPages { get; set; } = 1000;
-
-        //directory: 
-           /**/
-        /*TODO add ability to customize*/
 
 
         //call to ensure all directories exist
-        public static void EnsureDirectoriesExist()
+        public void EnsureDirectoriesExist()
         {
             Directory.CreateDirectory(InputDir);
             Directory.CreateDirectory(JobWell);
@@ -43,3 +65,4 @@ namespace MyWpfApp.Model
         }
     }
 }
+

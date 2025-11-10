@@ -24,7 +24,7 @@ namespace MyWpfApp.Model
 
         public PrintManager()
         {
-            AppSettings.EnsureDirectoriesExist();
+            AppSettings.Instance.EnsureDirectoriesExist();
             LoadPrinterStore();
             EnsureUnassignedPrinterExists();
         }
@@ -144,13 +144,13 @@ namespace MyWpfApp.Model
             if (string.IsNullOrWhiteSpace(PrinterName)) throw new ArgumentException(nameof(PrinterName));
 
             // ensure directory exists
-            if (!Directory.Exists(AppSettings.PrinterDir))
+            if (!Directory.Exists(AppSettings.Instance.PrinterDir))
             {
-                Directory.CreateDirectory(AppSettings.PrinterDir);
+                Directory.CreateDirectory(AppSettings.Instance.PrinterDir);
             }
 
             // create printer directory if missing 
-            string printerPath = Path.Combine(AppSettings.PrinterDir, PrinterName);
+            string printerPath = Path.Combine(AppSettings.Instance.PrinterDir, PrinterName);
             if (!Directory.Exists(printerPath))
             {
                 Directory.CreateDirectory(printerPath);
@@ -203,7 +203,7 @@ namespace MyWpfApp.Model
                 // remove directory if exists
                 try
                 {
-                    string printerPath = Path.Combine(AppSettings.PrinterDir, printerName);
+                    string printerPath = Path.Combine(AppSettings.Instance.PrinterDir, printerName);
                     if (Directory.Exists(printerPath)) Directory.Delete(printerPath, true);
                 }
                 catch
@@ -261,9 +261,9 @@ namespace MyWpfApp.Model
             {
                 try
                 {
-                    if (!Directory.Exists(AppSettings.PrinterDir)) Directory.CreateDirectory(AppSettings.PrinterDir);
+                    if (!Directory.Exists(AppSettings.Instance.PrinterDir)) Directory.CreateDirectory(AppSettings.Instance.PrinterDir);
 
-                    var path = AppSettings.PrinterStoreFile;
+                    var path = AppSettings.Instance.PrinterStoreFile;
                     if (!File.Exists(path))
                     {
                         _printers = new List<PrinterClass>();
@@ -301,7 +301,7 @@ namespace MyWpfApp.Model
             {
                 try
                 {
-                    var path = AppSettings.PrinterStoreFile;
+                    var path = AppSettings.Instance.PrinterStoreFile;
                     var dtoList = _printers.Select(p => new PersistedPrinterDto
                     {
                         Name = p.Name,
