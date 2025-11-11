@@ -3,7 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:Printer.ViewModel"
+        xmlns:vm="clr-namespace:Printer.ViewModel"  
+        xmlns:printerModel="clr-namespace:Printer.Model" 
+        
+        xmlns:jobModel="clr-namespace:MyWpfApp.Model"
         xmlns:fsvm="clr-namespace:FileSystem.ViewModel"    
         xmlns:fsm="clr-namespace:FileSystemItemModel.Model" 
         xmlns:local="clr-namespace:MyWpfApp"
@@ -72,12 +75,59 @@
                                   RowDetailsVisibilityMode="Visible"
                                   CanUserAddRows="False"
                                   IsReadOnly="True">
-                           
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Printer" Binding="{Binding Name}" Width="200"/>
-                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120"/>
-                                <DataGridTextColumn Header="Job Count" Binding="{Binding Jobs.Count}" Width="80"/>
+                                <DataGridTextColumn Header="Printer Name" Binding="{Binding Name}" Width="Auto"/>
+                                <DataGridTemplateColumn Header="Job Details" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TreeView Name="JobDetailsTreeView"
+                                              ItemsSource="{Binding Jobs}">
+                                                <TreeView.Resources>
+                                                    <HierarchicalDataTemplate DataType="{x:Type printerModel:Printer}" 
+                                                      ItemsSource="{Binding Jobs}">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="DarkGreen"/>
+                                                    </HierarchicalDataTemplate>
+
+                                                    <DataTemplate DataType="{x:Type jobModel:Job}">
+                                                        <StackPanel>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="Job: "/>
+                                                                <TextBlock Text="{Binding orgPdfName}" 
+                                                                           Foreground="Black"/>
+                                                            </StackPanel>
+
+                                                            <ItemsControl ItemsSource="{Binding fileNames}" Margin="15,0,0,0">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Button Content="{Binding .}" 
+                                                                                Padding="0"
+                                                                                HorizontalAlignment="Left"
+                                                                                Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+                                                                            <Button.Command>
+                                                                                <Binding Path="DataContext.OpenFileCommand" 
+                                                                                         RelativeSource="{RelativeSource FindAncestor, 
+                                                                                         AncestorType={x:Type TreeView}}"/>
+                                                                            </Button.Command>
+
+                                                                            <Button.CommandParameter>
+                                                                                <Binding Path="."/>
+                                                                            </Button.CommandParameter>
+                                                                        </Button>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                    
+
+                                                </TreeView.Resources>
+                                            </TreeView>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
                             </DataGrid.Columns>
+                            
 
 
                             <DataGrid.RowStyle>
@@ -99,33 +149,6 @@
                                     </Setter>
                                 </Style>
                             </DataGrid.RowStyle>
-
-                            <!-- Row details show the list of jobs for each printer -->
-                            <DataGrid.RowDetailsTemplate>
-                                <DataTemplate>
-                                    <Border Margin="8,4,8,8" Padding="6" BorderBrush="#DDD" BorderThickness="1" Background="#FFF">
-                                        <ItemsControl ItemsSource="{Binding Jobs}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Expander Header="{Binding OrgPdfName}" IsExpanded="False" Margin="0,6,0,6">
-                                                        <StackPanel Margin="8,4,0,4">
-                                                            <TextBlock Text="{Binding dateTime}" FontSize="11" Foreground="Gray" />
-                                                            <TextBlock Text="Sections:" FontWeight="SemiBold" Margin="0,6,0,2"/>
-                                                            <ItemsControl ItemsSource="{Binding fileNames}">
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate>
-                                                                        <TextBlock Text="{Binding}" Margin="8,2,0,2"/>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </StackPanel>
-                                                    </Expander>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGrid.RowDetailsTemplate>
 
                             <DataGrid.DataContext>
                                 <vm:PrinterViewModel/>
