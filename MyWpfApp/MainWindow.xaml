@@ -90,6 +90,13 @@
 
                                                     <DataTemplate DataType="{x:Type jobModel:Job}">
                                                         <StackPanel>
+
+                                                            <StackPanel.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="View Job" Click="RightClickViewJob"/>
+                                                                    <MenuItem Header="Remove Job" Click="RightClickRemoveJob"/>
+                                                                </ContextMenu>
+                                                            </StackPanel.ContextMenu>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Job: "/>
                                                                 <TextBlock Text="{Binding orgPdfName}" 
@@ -103,6 +110,15 @@
                                                                                 Padding="0"
                                                                                 HorizontalAlignment="Left"
                                                                                 Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+                                                                            <Button.ContextMenu>
+                                                                                <ContextMenu>
+                                                                                    <MenuItem Header="Print Job"  Click="RightClickPrintJob"/>
+                                                                                    <MenuItem Header="Remove Job" Click="RightClickRemoveJob"/>
+                                                                                    <MenuItem Header="View Job" Click="RightClickViewJob"   />
+                                                                                    <MenuItem Header="Move Job" Click="RightClickMoveJob"   />
+                                                                                </ContextMenu>
+                                                                            </Button.ContextMenu>
+
                                                                             <Button.Command>
                                                                                 <Binding Path="DataContext.OpenFileCommand" 
                                                                                          RelativeSource="{RelativeSource FindAncestor, 
@@ -128,27 +144,6 @@
 
                             </DataGrid.Columns>
                             
-
-
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Setter Property="ContextMenu">
-                                        <Setter.Value>
-                                            <ContextMenu>
-                                                <ContextMenu.Resources>
-                                                    <Style TargetType="MenuItem">
-                                                        <Setter Property="DataContext" Value="{x:Null}" />
-                                                    </Style>
-                                                </ContextMenu.Resources>
-                                                <MenuItem Header="Print Job"  />
-                                                <MenuItem Header="Remove Job" />
-                                                <MenuItem Header="View Job"    />
-                                                <MenuItem Header="Move Job"    />
-                                            </ContextMenu>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </DataGrid.RowStyle>
 
                             <DataGrid.DataContext>
                                 <vm:PrinterViewModel/>
