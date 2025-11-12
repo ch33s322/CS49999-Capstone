@@ -118,7 +118,7 @@
                                                             </ItemsControl>
                                                         </StackPanel>
                                                     </DataTemplate>
-                                                    
+
 
                                                 </TreeView.Resources>
                                             </TreeView>
@@ -127,7 +127,7 @@
                                 </DataGridTemplateColumn>
 
                             </DataGrid.Columns>
-                            
+
 
 
                             <DataGrid.RowStyle>
@@ -168,22 +168,26 @@
                     </Grid.ColumnDefinitions>
                     <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                     <TextBox Name="InputDir" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
-                    <Label Content="Adobe Path" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="adobePathBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,71,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
-                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
-                    <Label Content="Remove Printer" Margin="0,120,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,120,0,0" FontSize="12" Grid.Column="1">
+                    <Button Name="SetInputDirButton" Content="Browse" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="289,4,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+                    <Label Content="Archive Directory" Margin="0,27,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+
+                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,32,0,0" FontSize="12" Grid.Column="1" />
+                    <Button Name="SetArchiveDirButton" Content="Browse" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="289,30,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+
+                    <Label Content="Job Directory" Margin="0,53,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,58,0,0" FontSize="12" Grid.Column="1" />
+                    <Button Name="SetJoBDirButton" Content="Browse" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="289,56,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+
+                    <Label Content="Add Printer" Margin="0,79,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,83,0,0" FontSize="12" Grid.Column="1"/>
+                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,83,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+                    <Label Content="Remove Printer" Margin="0,109,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,109,0,0" FontSize="12" Grid.Column="1">
                         <ComboBox.DataContext>
                             <vm:PrinterViewModel/>
                         </ComboBox.DataContext>
                     </ComboBox>
-                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
+                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,109,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>
