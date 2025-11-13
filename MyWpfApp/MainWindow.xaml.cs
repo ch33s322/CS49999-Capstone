@@ -190,6 +190,8 @@ namespace MyWpfApp
         // Queue a job: create via JobCreator.MakeJobAsync then hand to PrintManager.QueueJob
         private async void SendJobClick(object sender, RoutedEventArgs e)
         {
+            var sendButton = sender as Button;
+
             // Determine selected printer from the PrinterSelect combobox
             var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
             string printerName = selectedPrinter?.Name;
@@ -221,6 +223,12 @@ namespace MyWpfApp
             // Determine simplex/duplex. Checked == duplex (label shows "Duplex"), so Simplex = not checked.
             bool simplex = !(SimplexDuplexCheckBox.IsChecked ?? false);
 
+            // Temporarily disable the "Send Job" button to prevent multiple clicks
+            if (sendButton != null)
+            {
+                sendButton.IsEnabled = false;
+            }
+
             try
             {
                 // Create job (this may do IO and CPU work; call async method)
@@ -249,6 +257,14 @@ namespace MyWpfApp
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to create or queue job: {ex.Message}", "Send Job", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // Re-enable the "Send Job" button
+                if (sendButton != null)
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => sendButton.IsEnabled = true);
+                }
             }
         }
 
