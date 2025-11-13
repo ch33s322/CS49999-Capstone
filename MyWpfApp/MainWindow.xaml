@@ -93,8 +93,8 @@
 
                                                             <StackPanel.ContextMenu>
                                                                 <ContextMenu>
-                                                                    <MenuItem Header="View Job" Click="RightClickViewJob"/>
-                                                                    <MenuItem Header="Remove Job" Click="RightClickRemoveJob"/>
+                                                                    <MenuItem Header="View Job" Click="RightClickGetJob"/>
+                                                                    <MenuItem Header="Remove Job" Click="RightClickGetJob"/>
                                                                 </ContextMenu>
                                                             </StackPanel.ContextMenu>
                                                             <StackPanel Orientation="Horizontal">
@@ -112,22 +112,14 @@
                                                                                 Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
                                                                             <Button.ContextMenu>
                                                                                 <ContextMenu>
-                                                                                    <MenuItem Header="Print Job"  Click="RightClickPrintJob"/>
-                                                                                    <MenuItem Header="Remove Job" Click="RightClickRemoveJob"/>
-                                                                                    <MenuItem Header="View Job" Click="RightClickViewJob"   />
-                                                                                    <MenuItem Header="Move Job" Click="RightClickMoveJob"   />
+                                                                                    <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
+                                                                                    <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
+                                                                                    <MenuItem Header="View Job" Click="RightClickGetFile"   />
+                                                                                    <MenuItem Header="Move Job" Click="RightClickGetFile"   />
                                                                                 </ContextMenu>
                                                                             </Button.ContextMenu>
 
-                                                                            <Button.Command>
-                                                                                <Binding Path="DataContext.OpenFileCommand" 
-                                                                                         RelativeSource="{RelativeSource FindAncestor, 
-                                                                                         AncestorType={x:Type TreeView}}"/>
-                                                                            </Button.Command>
-
-                                                                            <Button.CommandParameter>
-                                                                                <Binding Path="."/>
-                                                                            </Button.CommandParameter>
+                                                                            
                                                                         </Button>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>

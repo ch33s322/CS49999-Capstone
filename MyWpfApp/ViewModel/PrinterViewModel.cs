@@ -200,6 +200,58 @@ namespace Printer.ViewModel
             return $"Status Code: {statusValue}";
         }
 
+        public Job GetJobByFileName(string fileNameToFind)
+        {
+            if (string.IsNullOrEmpty(fileNameToFind))
+            {
+                return null;
+            }
+
+            // Use LINQ to flatten the collection of Jobs from all Printers
+            // and find the first Job that matches the criteria.
+            var matchingJob = AvailablePrinters
+                // SelectMany flattens all the 'Jobs' lists from all printers into a single sequence of Job objects
+                .SelectMany(printer => printer.Jobs)
+                // Find the first Job where its 'fileNames' list contains the target file name.
+                .FirstOrDefault(job => job.fileNames != null && job.fileNames.Contains(fileNameToFind));
+
+            // Log the result for debugging
+            if (matchingJob != null)
+            {
+                Debug.WriteLine($"Found Job: {matchingJob.orgPdfName} for file: {fileNameToFind}");
+            }
+            else
+            {
+                Debug.WriteLine($"No Job found containing file: {fileNameToFind}");
+            }
+
+            return matchingJob;
+        }
+
+        public Printer.Model.Printer GetPrinterByJob(Job jobToFind)
+        {
+            if (jobToFind == null)
+            {
+                return null;
+            }
+
+            // Use LINQ to flatten the collection of Jobs from all Printers
+            // and find the first Job that matches the criteria.
+            var matchingJob = AvailablePrinters
+                // SelectMany flattens all the 'Jobs' lists from all printers into a single sequence of Job objects
+                .FirstOrDefault(printer => printer.Jobs.Contains(jobToFind));
+            if (matchingJob != null)
+            {
+                Debug.WriteLine($"Found Printer: {matchingJob.Name} for Job: {jobToFind.orgPdfName}");
+            }
+            else
+            {
+                Debug.WriteLine($"No Printer found containing Job: {jobToFind.orgPdfName}");
+            }
+
+            return matchingJob;
+        }
+
         // ----------------------------------------------------------------------------------
         // RESOURCE CLEANUP (IDisposable IMPLEMENTATION)
         // ----------------------------------------------------------------------------------

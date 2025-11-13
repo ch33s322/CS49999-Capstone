@@ -1,5 +1,6 @@
 ﻿using FileSystemItemModel.Model;
 using MyWpfApp.Model;
+using Printer.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -64,6 +65,91 @@ namespace MyWpfApp
 
         }
 
+        private void RightClickGetJob(object sender, RoutedEventArgs e)
+        {
+            // 1. Cast the sender to the clicked MenuItem
+            MenuItem menuItem = sender as MenuItem;
+            if (menuItem == null) return;
+
+            // 2. The DataContext of the MenuItem is automatically the DataContext
+            //    of the element the ContextMenu is attached to (the Job StackPanel).
+            Job jobContext = menuItem.DataContext as Job;
+
+            if (jobContext != null)
+            {
+                string header = menuItem.Header.ToString();
+
+                // Example action based on the clicked menu item
+                switch (header)
+                {
+                    case "View Job":
+                        MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        break;
+                    case "Remove Job":
+                        MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        break;
+                }
+            }
+        }
+
+        private void RightClickGetFile(object sender, RoutedEventArgs e)
+        {
+            // 1. Cast the sender to the clicked MenuItem
+            MenuItem menuItem = sender as MenuItem;
+            if (menuItem == null) return;
+            // 2. The DataContext of the MenuItem is automatically the DataContext
+            //    of the element the ContextMenu is attached to (the File StackPanel).
+            string fileContext = menuItem.DataContext as string;
+            if (fileContext != null)
+            {
+                DataGrid dataGrid = this.FindName("PrintJobManager") as DataGrid;
+
+                if (dataGrid?.DataContext is PrinterViewModel viewModel)
+                {
+                    Job parentJob = viewModel.GetJobByFileName(fileContext);
+
+                    if (parentJob != null)
+                    {
+                        Printer.Model.Printer parentPrinter = viewModel.GetPrinterByJob(parentJob);
+
+
+                        string header = menuItem.Header.ToString();
+                        // Example action based on the clicked menu item
+                        switch (header)
+                        {
+                            case "Print Job":
+                                MessageBox.Show($"File Context: Print requested for file '{fileContext}' " +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                            case "View Job":
+                                MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                            case "Move Job":
+                                MessageBox.Show($"File Context: Move requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                            case "Remove Job":
+                                MessageBox.Show($"File Context: Remove requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Parent job not found for file '{fileContext}'.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("File context is null.");
+            }
+        }
 
         private void RightClickPrintJob(object sender, RoutedEventArgs e)
         {
