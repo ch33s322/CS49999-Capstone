@@ -13,6 +13,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using PrinterClass = Printer.Model.Printer;
 
 namespace MyWpfApp.Model
@@ -67,12 +68,18 @@ namespace MyWpfApp.Model
                     _printers.Add(target);
                 }
 
-                // avoid duplicate job ids
-                if (!target.Jobs.Any(j => j.jobId == job.jobId))
+                var existingJob = _printers.SelectMany(p => p.Jobs).FirstOrDefault(j => j.orgPdfName == job.orgPdfName);
+
+                // avoid duplicate jobs
+                if (existingJob == null)
                 {
                     job.printerName = target.Name; // keep job consistent
                     target.Jobs.Add(job);
                     SavePrinterStore();
+                }
+                else
+                {
+                    MessageBox.Show("A job for this PDF already exists. Duplicate jobs are not allowed.", "Queue Job", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
