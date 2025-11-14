@@ -90,6 +90,13 @@
 
                                                     <DataTemplate DataType="{x:Type jobModel:Job}">
                                                         <StackPanel>
+
+                                                            <StackPanel.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="View Job" Click="RightClickGetJob"/>
+                                                                    <MenuItem Header="Remove Job" Click="RightClickGetJob"/>
+                                                                </ContextMenu>
+                                                            </StackPanel.ContextMenu>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Text="Job: "/>
                                                                 <TextBlock Text="{Binding orgPdfName}" 
@@ -103,15 +110,16 @@
                                                                                 Padding="0"
                                                                                 HorizontalAlignment="Left"
                                                                                 Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
-                                                                            <Button.Command>
-                                                                                <Binding Path="DataContext.OpenFileCommand" 
-                                                                                         RelativeSource="{RelativeSource FindAncestor, 
-                                                                                         AncestorType={x:Type TreeView}}"/>
-                                                                            </Button.Command>
+                                                                            <Button.ContextMenu>
+                                                                                <ContextMenu>
+                                                                                    <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
+                                                                                    <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
+                                                                                    <MenuItem Header="View Job" Click="RightClickGetFile"   />
+                                                                                    <MenuItem Header="Move Job" Click="RightClickGetFile"   />
+                                                                                </ContextMenu>
+                                                                            </Button.ContextMenu>
 
-                                                                            <Button.CommandParameter>
-                                                                                <Binding Path="."/>
-                                                                            </Button.CommandParameter>
+                                                                            
                                                                         </Button>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>
@@ -128,27 +136,6 @@
 
                             </DataGrid.Columns>
 
-
-
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Setter Property="ContextMenu">
-                                        <Setter.Value>
-                                            <ContextMenu>
-                                                <ContextMenu.Resources>
-                                                    <Style TargetType="MenuItem">
-                                                        <Setter Property="DataContext" Value="{x:Null}" />
-                                                    </Style>
-                                                </ContextMenu.Resources>
-                                                <MenuItem Header="Print Job"  />
-                                                <MenuItem Header="Remove Job" />
-                                                <MenuItem Header="View Job"    />
-                                                <MenuItem Header="Move Job"    />
-                                            </ContextMenu>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </DataGrid.RowStyle>
 
                             <DataGrid.DataContext>
                                 <vm:PrinterViewModel/>
@@ -187,7 +174,11 @@
                             <vm:PrinterViewModel/>
                         </ComboBox.DataContext>
                     </ComboBox>
-                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,109,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
+                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
+                    <Label Content="Max Pages per Split" Margin="0,150,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="MaxPagesTextBox" Width="100" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="150,150,0,0" FontSize="12" Grid.Column="1"/>
+                    <Button Name="ApplyMaxPagesButton" Content="Apply" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,150,0,0" Click="ApplyMaxPagesButton_Click" Grid.Column="1"/>
+                    <TextBlock Name="MaxPagesValidationLabel" Foreground="Red" Margin="52,176,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>

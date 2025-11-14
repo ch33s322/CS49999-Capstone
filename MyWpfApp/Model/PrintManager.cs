@@ -1,18 +1,20 @@
 ﻿using MyWpfApp.Model;
 using PdfSharpCore.Pdf;
+using PdfSharpCore.Pdf.IO;
 using Printer.ViewModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Printing;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
-using System.Threading.Tasks;
-using PrinterClass = Printer.Model.Printer;
 using System.Threading;
-using System.Diagnostics;
-using System.Printing;
+using System.Threading.Tasks;
+using System.Windows;
+using PrinterClass = Printer.Model.Printer;
 
 namespace MyWpfApp.Model
 {
@@ -66,12 +68,18 @@ namespace MyWpfApp.Model
                     _printers.Add(target);
                 }
 
-                // avoid duplicate job ids
-                if (!target.Jobs.Any(j => j.jobId == job.jobId))
+                var existingJob = _printers.SelectMany(p => p.Jobs).FirstOrDefault(j => j.orgPdfName == job.orgPdfName);
+
+                // avoid duplicate jobs
+                if (existingJob == null)
                 {
                     job.printerName = target.Name; // keep job consistent
                     target.Jobs.Add(job);
                     SavePrinterStore();
+                }
+                else
+                {
+                    MessageBox.Show("A job for this PDF already exists. Duplicate jobs are not allowed.", "Queue Job", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
         }
@@ -417,6 +425,12 @@ namespace MyWpfApp.Model
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
             };
 
+            int pageCount = 0;
+           using (PdfDocument input = PdfReader.Open(inputPdfPath, PdfDocumentOpenMode.Import))
+            {
+                pageCount = input.PageCount;
+            }
+
             Debug.WriteLine("starting process for print");
             System.Diagnostics.Process proc = null;
             try
@@ -425,12 +439,12 @@ namespace MyWpfApp.Model
                 if (proc == null)
                     throw new InvalidOperationException("Failed to start Adobe Reader process.");
 
-                TimeSpan timeoutMs = TimeSpan.FromSeconds(120); // 120 seconds timeout for printing
+                TimeSpan timeoutMs = TimeSpan.FromMinutes(30); // 30 minute timeout for print job completion
 
                 bool completed;
                 try
                 {
-                    completed = WaitForPrintJobCompletion(printerName, pdfName, timeoutMs);
+                    completed = WaitForPrintJobCompletion(printerName, pdfName, pageCount, timeoutMs);
                 }
                 catch
                 {
@@ -474,7 +488,7 @@ namespace MyWpfApp.Model
             }
         }
 
-        private bool WaitForPrintJobCompletion(string printerName, string documentName, TimeSpan timeout)
+        private bool WaitForPrintJobCompletion(string printerName, string documentName, int pagesToPrint, TimeSpan timeout)
         {
             var server = new LocalPrintServer();
             PrintQueue queue;
@@ -504,6 +518,10 @@ namespace MyWpfApp.Model
                     if (job != null)
                     {
                         observedJobId = job.JobIdentifier;
+
+                        // job still in spooler; finish when pages reach pagesToPrint
+                        //if (job.NumberOfPages >= pagesToPrint) return true;
+                        if (!job.JobStatus.HasFlag(PrintJobStatus.Spooling) && job.NumberOfPages >= pagesToPrint) return true;
 
                         // job finished successfully (removed from spooler) or reported completed
                         if (job.IsCompleted || job.IsDeleted) return true;

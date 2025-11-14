@@ -26,15 +26,15 @@ namespace MyWpfApp.Tests
             Assert.True(File.Exists(actualPath));
             Assert.NotNull(actualPath);
         }
-        /*
+        
         [Fact]
         public void TestPrintingSinglePagePdf()
         {
             // Arrange
             var pm = new PrintManager();
-            var testPdfName = "Information_on_Windows_Protected_Print_Mode.pdf";
-            var printerName = "hp LaserJet 3015 PCL 5"; // printer on test system
-            var pdfPath = "C:/Users/Austin/source/repos/ch33s322/CS49999-Capstone/MyWpfApp.Tests/Information_on_Windows_Protected_Print_Mode.pdf";
+            var testPdfName = "DocReformed Technical Report.pdf";
+            var printerName = "Microsoft Print to PDF"; // printer on test system
+            var pdfPath = "C:/Users/Austin/source/repos/ch33s322/CS49999-Capstone/MyWpfApp.Tests/DocReformed Technical Report.pdf";
            
             Assert.True(File.Exists(pdfPath), $"Test PDF '{testPdfName}' not found at '{pdfPath}'.");
 
@@ -51,7 +51,7 @@ namespace MyWpfApp.Tests
             
             Assert.True(printResult, "Printing the single-page PDF failed.");
         }
-        */
+        
 
     }
 }

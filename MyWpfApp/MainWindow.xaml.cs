@@ -1,6 +1,8 @@
 ﻿using FileSystemItemModel.Model;
 using MyWpfApp.Model;
+using Printer.ViewModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -53,6 +55,17 @@ namespace MyWpfApp
                 // non-fatal; still allow manual input or other flows
                 System.Diagnostics.Debug.WriteLine($"Failed to enumerate installed printers: {ex.Message}");
             }
+
+            // Initialize MaxPages textbox with current setting
+            try
+            {
+                MaxPagesTextBox.Text = AppSettings.MaxPages.ToString();
+                MaxPagesValidationLabel.Text = string.Empty;
+            }
+            catch
+            {
+                // ignore if control not present or other issue
+            }
         }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
@@ -65,6 +78,123 @@ namespace MyWpfApp
 
         }
 
+        private void RightClickGetJob(object sender, RoutedEventArgs e)
+        {
+            // 1. Cast the sender to the clicked MenuItem
+            MenuItem menuItem = sender as MenuItem;
+            if (menuItem == null) return;
+
+            // 2. The DataContext of the MenuItem is automatically the DataContext
+            //    of the element the ContextMenu is attached to (the Job StackPanel).
+            Job jobContext = menuItem.DataContext as Job;
+
+            if (jobContext != null)
+            {
+                string header = menuItem.Header.ToString();
+
+                // Example action based on the clicked menu item
+                switch (header)
+                {
+                    case "View Job":
+                        MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        break;
+                    case "Remove Job":
+                        MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        break;
+                }
+            }
+        }
+
+        private void RightClickGetFile(object sender, RoutedEventArgs e)
+        {
+            // 1. Cast the sender to the clicked MenuItem
+            MenuItem menuItem = sender as MenuItem;
+            if (menuItem == null) return;
+            // 2. The DataContext of the MenuItem is automatically the DataContext
+            //    of the element the ContextMenu is attached to (the File StackPanel).
+            string fileContext = menuItem.DataContext as string;
+            if (fileContext != null)
+            {
+                DataGrid dataGrid = this.FindName("PrintJobManager") as DataGrid;
+
+                if (dataGrid?.DataContext is PrinterViewModel viewModel)
+                {
+                    //get parent job
+                    Job parentJob = viewModel.GetJobByFileName(fileContext);
+
+                    if (parentJob != null)
+                    {
+                        //get parent printer
+                        Printer.Model.Printer parentPrinter = viewModel.GetPrinterByJob(parentJob);
+
+
+                        string header = menuItem.Header.ToString();
+                        // Example action based on the clicked menu item
+                        switch (header)
+                        {
+                            case "Print Job":
+
+                                var server = new LocalPrintServer();
+                                var printQueue = server.GetPrintQueue(parentPrinter.Name);
+                                printQueue.Refresh();
+                                var jobs = printQueue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
+
+                                //confirm job is not already in the print queue
+                                var existingJob = jobs.FirstOrDefault(j => j.Name.Equals(parentJob.orgPdfName, StringComparison.OrdinalIgnoreCase));
+                                if (existingJob != null)
+                                {
+                                    MessageBox.Show($"Job '{fileContext}' is already in the print queue for printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                else
+                                {
+                                    // Code to send the job to the printer would go here
+                                    MessageBox.Show($"Sending job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                    //check printer status is a form of connected
+                                    if (parentPrinter.Status == "Ready" || parentPrinter.Status == "Printing")
+                                    {
+                                        // Print the job
+                                        var printResult = _printManager.PrintJob(fileContext, parentPrinter.Name);
+                                        if (printResult)
+                                        {
+                                            MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show($"Failed to send job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        }
+                                    }
+                                }
+
+                                break;
+                            case "View Job":
+                                MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                            case "Move Job":
+                                MessageBox.Show($"File Context: Move requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                            case "Remove Job":
+                                MessageBox.Show($"File Context: Remove requested for file '{fileContext}'" +
+                                    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                    $"in Printer '{parentPrinter.Name}'");
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Parent job not found for file '{fileContext}'.");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("File context is null.");
+            }
+        }
 
         private void RightClickPrintJob(object sender, RoutedEventArgs e)
         {
@@ -105,6 +235,8 @@ namespace MyWpfApp
         // Queue a job: create via JobCreator.MakeJobAsync then hand to PrintManager.QueueJob
         private async void SendJobClick(object sender, RoutedEventArgs e)
         {
+            var sendButton = sender as Button;
+
             // Determine selected printer from the PrinterSelect combobox
             _selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
             string printerName = _selectedPrinter?.Name;
@@ -135,6 +267,12 @@ namespace MyWpfApp
 
             // Determine simplex/duplex. Checked == duplex (label shows "Duplex"), so Simplex = not checked.
             bool simplex = !(SimplexDuplexCheckBox.IsChecked ?? false);
+
+            // Temporarily disable the "Send Job" button to prevent multiple clicks
+            if (sendButton != null)
+            {
+                sendButton.IsEnabled = false;
+            }
 
             try
             {
@@ -168,6 +306,14 @@ namespace MyWpfApp
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to create or queue job: {ex.Message}", "Send Job", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // Re-enable the "Send Job" button
+                if (sendButton != null)
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => sendButton.IsEnabled = true);
+                }
             }
         }
 
@@ -250,6 +396,25 @@ namespace MyWpfApp
             PrintJobManager.DataContext = vm;
             currentPrinterPickComboBox.DataContext = vm;
             MessageBox.Show($"Printer '{printerName}' removed.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Apply MaxPages setting
+        private void ApplyMaxPagesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(MaxPagesTextBox.Text))
+            {
+                MessageBox.Show("Please enter a value (number greater than 0, no commas).", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(MaxPagesTextBox.Text.Trim(), out int newMax) || newMax < 1)
+            {
+                MessageBox.Show("Please enter an integer greater than 0, without commas.", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            AppSettings.MaxPages = newMax;
+            MessageBox.Show($"Max pages per split set to {newMax}.", "Settings updated", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }
