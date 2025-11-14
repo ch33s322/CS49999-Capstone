@@ -171,6 +171,10 @@
                         </ComboBox.DataContext>
                     </ComboBox>
                     <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
+                    <Label Content="Max Pages per Split" Margin="0,150,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                    <TextBox Name="MaxPagesTextBox" Width="100" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="150,150,0,0" FontSize="12" Grid.Column="1"/>
+                    <Button Name="ApplyMaxPagesButton" Content="Apply" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,150,0,0" Click="ApplyMaxPagesButton_Click" Grid.Column="1"/>
+                    <TextBlock Name="MaxPagesValidationLabel" Foreground="Red" Margin="52,176,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"/>
                 </Grid>
             </TabItem>
         </TabControl>
