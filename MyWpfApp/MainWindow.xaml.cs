@@ -53,6 +53,17 @@ namespace MyWpfApp
                 // non-fatal; still allow manual input or other flows
                 System.Diagnostics.Debug.WriteLine($"Failed to enumerate installed printers: {ex.Message}");
             }
+
+            // Initialize MaxPages textbox with current setting
+            try
+            {
+                MaxPagesTextBox.Text = AppSettings.MaxPages.ToString();
+                MaxPagesValidationLabel.Text = string.Empty;
+            }
+            catch
+            {
+                // ignore if control not present or other issue
+            }
         }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
@@ -347,6 +358,25 @@ namespace MyWpfApp
             PrintJobManager.DataContext = vm;
             currentPrinterPickComboBox.DataContext = vm;
             MessageBox.Show($"Printer '{printerName}' removed.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Apply MaxPages setting
+        private void ApplyMaxPagesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(MaxPagesTextBox.Text))
+            {
+                MessageBox.Show("Please enter a value (number greater than 0, no commas).", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(MaxPagesTextBox.Text.Trim(), out int newMax) || newMax < 1)
+            {
+                MessageBox.Show("Please enter an integer greater than 0, without commas.", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            AppSettings.MaxPages = newMax;
+            MessageBox.Show($"Max pages per split set to {newMax}.", "Settings updated", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }
