@@ -28,12 +28,12 @@ namespace MyWpfApp
     public partial class MainWindow : Window
     {
         private readonly PrintManager _printManager;
-
+        public Printer.Model.Printer _selectedPrinter;
         public MainWindow()
         {
             InitializeComponent();
             _printManager = new PrintManager();
-
+           
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
@@ -48,6 +48,7 @@ namespace MyWpfApp
                 }
                 printerPickComboBox.ItemsSource = list;
                 if (list.Any()) printerPickComboBox.SelectedIndex = 0;
+                
             }
             catch (Exception ex)
             {
@@ -237,8 +238,8 @@ namespace MyWpfApp
             var sendButton = sender as Button;
 
             // Determine selected printer from the PrinterSelect combobox
-            var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
-            string printerName = selectedPrinter?.Name;
+            _selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
+            string printerName = _selectedPrinter?.Name;
             Debug.WriteLine(printerName);
 
             if (string.IsNullOrWhiteSpace(printerName))
@@ -288,10 +289,14 @@ namespace MyWpfApp
                     Debug.WriteLine("Job queued.");
                     // Refresh view-models so UI reflects new job (the app currently creates separate VMs in XAML)
                     var vm = new Printer.ViewModel.PrinterViewModel();
-                    PrinterSelect.DataContext = vm;
+                    //PrinterSelect.DataContext = vm; <-- obsolete, wipes the select printer dropdown on each 'send job' click
                     PrintJobManager.DataContext = vm;
                 });
 
+                if (File.Exists(AppSettings.JobWell  +  "\\" + pdfName))
+                {
+                    File.Delete(AppSettings.JobWell + "\\" + pdfName);                  
+                }
                 MessageBox.Show($"Job created and queued for printer '{printerName}'.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (System.IO.FileNotFoundException fnf)
