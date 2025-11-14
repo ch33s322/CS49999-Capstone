@@ -2,6 +2,7 @@
 using MyWpfApp.Model;
 using Printer.ViewModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -117,10 +118,12 @@ namespace MyWpfApp
 
                 if (dataGrid?.DataContext is PrinterViewModel viewModel)
                 {
+                    //get parent job
                     Job parentJob = viewModel.GetJobByFileName(fileContext);
 
                     if (parentJob != null)
                     {
+                        //get parent printer
                         Printer.Model.Printer parentPrinter = viewModel.GetPrinterByJob(parentJob);
 
 
@@ -129,9 +132,39 @@ namespace MyWpfApp
                         switch (header)
                         {
                             case "Print Job":
-                                MessageBox.Show($"File Context: Print requested for file '{fileContext}' " +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+
+                                var server = new LocalPrintServer();
+                                var printQueue = server.GetPrintQueue(parentPrinter.Name);
+                                printQueue.Refresh();
+                                var jobs = printQueue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
+
+                                //confirm job is not already in the print queue
+                                var existingJob = jobs.FirstOrDefault(j => j.Name.Equals(parentJob.orgPdfName, StringComparison.OrdinalIgnoreCase));
+                                if (existingJob != null)
+                                {
+                                    MessageBox.Show($"Job '{fileContext}' is already in the print queue for printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                else
+                                {
+                                    // Code to send the job to the printer would go here
+                                    MessageBox.Show($"Sending job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                    //check printer status is a form of connected
+                                    if (parentPrinter.Status == "Ready" || parentPrinter.Status == "Printing")
+                                    {
+                                        // Print the job
+                                        var printResult = _printManager.PrintJob(fileContext, parentPrinter.Name);
+                                        if (printResult)
+                                        {
+                                            MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show($"Failed to send job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        }
+                                    }
+                                }
+
                                 break;
                             case "View Job":
                                 MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
