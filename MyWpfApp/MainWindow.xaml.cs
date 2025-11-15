@@ -37,6 +37,18 @@ namespace MyWpfApp
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
+            // Ensure the printer dropdown shows the initial placeholder when no selection exists.
+            // (ComboBox controls are available after InitializeComponent.)
+            try
+            {
+                PrinterSelect.SelectedIndex = -1;
+                PrinterSelect.Text = "Select Printer";
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
             // Populate the add printers combo with installed printers on the machine
             try
             {
@@ -324,7 +336,11 @@ namespace MyWpfApp
 
         private void PrinterSelectSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //add code to handle printer selection changes
+            // If the selection becomes null (ie. printer removal), dropdown showsd placeholder text
+            if (PrinterSelect.SelectedItem == null)
+            {
+                PrinterSelect.Text = "Select Printer";
+            }
         }
 
         private void PrintJobManager_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -360,11 +376,8 @@ namespace MyWpfApp
                 return;
             }
 
-            // Refresh the PrinterViewModel instances used in the UI so the new printer appears.
-            var vm = new Printer.ViewModel.PrinterViewModel();
-            PrinterSelect.DataContext = vm;
-            PrintJobManager.DataContext = vm;
-            currentPrinterPickComboBox.DataContext = vm;
+            // Refresh PrinterViewModel instances in the UI so new printer appears
+            RefreshPrinterViewModels();
 
             // Optionally remove the added item from the dropdown or keep it
             //printerPickComboBox.Items.Refresh();
@@ -390,11 +403,10 @@ namespace MyWpfApp
                 MessageBox.Show($"Unable to remove printer: {ex.Message}", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            // Refresh the PrinterViewModel instances used in the UI so the removed printer disappears.
-            var vm = new Printer.ViewModel.PrinterViewModel();
-            PrinterSelect.DataContext = vm;
-            PrintJobManager.DataContext = vm;
-            currentPrinterPickComboBox.DataContext = vm;
+
+            // Refresh PrinterViewModel instances used in UI so removed printer disappears, clear the selection
+            RefreshPrinterViewModels();
+
             MessageBox.Show($"Printer '{printerName}' removed.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -415,6 +427,20 @@ namespace MyWpfApp
 
             AppSettings.MaxPages = newMax;
             MessageBox.Show($"Max pages per split set to {newMax}.", "Settings updated", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Helper to replace the PrinterViewModel instances used by UI controls
+        private void RefreshPrinterViewModels()
+        {
+            var vm = new Printer.ViewModel.PrinterViewModel();
+            PrinterSelect.DataContext = vm;
+            PrintJobManager.DataContext = vm;
+            currentPrinterPickComboBox.DataContext = vm;
+
+            // Clear any currently selected item and set text to placeholder
+            // SelectedIndex = -1 guarantees no selection
+            PrinterSelect.SelectedIndex = -1;
+            PrinterSelect.Text = "Select Printer";
         }
     }
 }
