@@ -2,6 +2,7 @@
 using MyWpfApp.Model;
 using Printer.ViewModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -27,12 +28,12 @@ namespace MyWpfApp
     public partial class MainWindow : Window
     {
         private readonly PrintManager _printManager;
-
+        public Printer.Model.Printer _selectedPrinter;
         public MainWindow()
         {
             InitializeComponent();
             _printManager = new PrintManager();
-
+           
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
@@ -59,6 +60,7 @@ namespace MyWpfApp
                 }
                 printerPickComboBox.ItemsSource = list;
                 if (list.Any()) printerPickComboBox.SelectedIndex = 0;
+                
             }
             catch (Exception ex)
             {
@@ -129,10 +131,12 @@ namespace MyWpfApp
 
                 if (dataGrid?.DataContext is PrinterViewModel viewModel)
                 {
+                    //get parent job
                     Job parentJob = viewModel.GetJobByFileName(fileContext);
 
                     if (parentJob != null)
                     {
+                        //get parent printer
                         Printer.Model.Printer parentPrinter = viewModel.GetPrinterByJob(parentJob);
 
 
@@ -141,9 +145,39 @@ namespace MyWpfApp
                         switch (header)
                         {
                             case "Print Job":
-                                MessageBox.Show($"File Context: Print requested for file '{fileContext}' " +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+
+                                var server = new LocalPrintServer();
+                                var printQueue = server.GetPrintQueue(parentPrinter.Name);
+                                printQueue.Refresh();
+                                var jobs = printQueue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
+
+                                //confirm job is not already in the print queue
+                                var existingJob = jobs.FirstOrDefault(j => j.Name.Equals(parentJob.orgPdfName, StringComparison.OrdinalIgnoreCase));
+                                if (existingJob != null)
+                                {
+                                    MessageBox.Show($"Job '{fileContext}' is already in the print queue for printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                else
+                                {
+                                    // Code to send the job to the printer would go here
+                                    MessageBox.Show($"Sending job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                    //check printer status is a form of connected
+                                    if (parentPrinter.Status == "Ready" || parentPrinter.Status == "Printing")
+                                    {
+                                        // Print the job
+                                        var printResult = _printManager.PrintJob(fileContext, parentPrinter.Name);
+                                        if (printResult)
+                                        {
+                                            MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show($"Failed to send job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        }
+                                    }
+                                }
+
                                 break;
                             case "View Job":
                                 MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
@@ -216,8 +250,8 @@ namespace MyWpfApp
             var sendButton = sender as Button;
 
             // Determine selected printer from the PrinterSelect combobox
-            var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
-            string printerName = selectedPrinter?.Name;
+            _selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
+            string printerName = _selectedPrinter?.Name;
             Debug.WriteLine(printerName);
 
             if (string.IsNullOrWhiteSpace(printerName))
@@ -266,9 +300,15 @@ namespace MyWpfApp
                     _printManager.QueueJob(job);
                     Debug.WriteLine("Job queued.");
                     // Refresh view-models so UI reflects new job (the app currently creates separate VMs in XAML)
-                    RefreshPrinterViewModels();
+                    var vm = new Printer.ViewModel.PrinterViewModel();
+                    //PrinterSelect.DataContext = vm; <-- obsolete, wipes the select printer dropdown on each 'send job' click
+                    PrintJobManager.DataContext = vm;
                 });
 
+                if (File.Exists(AppSettings.JobWell  +  "\\" + pdfName))
+                {
+                    File.Delete(AppSettings.JobWell + "\\" + pdfName);                  
+                }
                 MessageBox.Show($"Job created and queued for printer '{printerName}'.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (System.IO.FileNotFoundException fnf)
