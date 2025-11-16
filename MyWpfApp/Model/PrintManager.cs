@@ -28,13 +28,21 @@ namespace MyWpfApp.Model
         // name used for unassigned jobs
         private const string UnassignedPrinterName = "";
 
-        public string AdobeReaderPath { get; private set; }
+        // default Adobe path now set to Acrobat.exe; callers can still override
+        public string AdobeReaderPath { get; set; } = @"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe";
+
         public PrintManager()
         {
             AppSettings.EnsureDirectoriesExist();
             LoadPrinterStore();
             EnsureUnassignedPrinterExists();
-            AdobeReaderPath = GetAdobeReaderPath();
+
+            // Only override default if a registry-detected path is available
+            var detected = GetAdobeReaderPath();
+            if (!string.IsNullOrWhiteSpace(detected))
+            {
+                AdobeReaderPath = detected;
+            }
         }
 
         private void EnsureUnassignedPrinterExists()
