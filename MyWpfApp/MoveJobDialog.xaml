@@ -1,0 +1,27 @@
+<Window x:Class="MyWpfApp.MoveJobDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Move Job" Height="220" Width="400" WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{Binding JobTitle}" FontWeight="Bold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" Text="Select a new printer for this job:" Margin="0,0,0,6"/>
+
+        <ComboBox Grid.Row="2" Name="PrinterCombo"
+                  ItemsSource="{Binding Printers}"
+                  Margin="0,0,0,10"
+                  IsSynchronizedWithCurrentItem="True"/>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" Width="80" Margin="0,0,8,0" IsDefault="True" Click="OkClick"/>
+            <Button Content="Cancel" Width="80" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
