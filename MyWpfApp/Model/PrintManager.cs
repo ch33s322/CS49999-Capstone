@@ -1,4 +1,5 @@
 ﻿using MyWpfApp.Model;
+using MyWpfApp.Utilities;
 using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.IO;
 using Printer.ViewModel;
@@ -29,7 +30,7 @@ namespace MyWpfApp.Model
         private const string UnassignedPrinterName = "";
 
         // default Adobe path now set to Acrobat.exe; callers can still override
-        public string AdobeReaderPath { get; set; } = @"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe";
+        public string AdobeReaderPath { get; set; } = @"C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe";
 
         public PrintManager()
         {
@@ -184,6 +185,17 @@ namespace MyWpfApp.Model
                     var newPrinter = new PrinterClass { Name = PrinterName, Status = "Unknown" };
                     _printers.Add(newPrinter);
                     SavePrinterStore();
+
+                    // Log addition
+                    try
+                    {
+                        ActivityLogger.LogAction("AddPrinter", $"Printer '{PrinterName}' added");
+                    }
+                    catch
+                    {
+                        // do not let logging break operation
+                    }
+
                     return true;
                 }
             }
@@ -209,12 +221,14 @@ namespace MyWpfApp.Model
                 }
 
                 // move jobs
+                int movedCount = 0;
                 foreach (var j in entry.Jobs)
                 {
                     j.printerName = unassigned.Name;
                     if (!unassigned.Jobs.Any(x => x.jobId == j.jobId))
                     {
                         unassigned.Jobs.Add(j);
+                        movedCount++;
                     }
                 }
 
@@ -230,6 +244,16 @@ namespace MyWpfApp.Model
                 catch
                 {
                     // ignore IO errors
+                }
+
+                // Log removal
+                try
+                {
+                    ActivityLogger.LogAction("RemovePrinter", $"Printer '{printerName}' removed; {movedCount} job(s) moved to unassigned");
+                }
+                catch
+                {
+                    // do not let logging break operation
                 }
 
                 return entry;
@@ -413,15 +437,13 @@ namespace MyWpfApp.Model
 
         public bool PrintJob(string pdfName, string printerName)
         {
-            // validating job and adobe reader path
             if (string.IsNullOrWhiteSpace(pdfName)) throw new ArgumentException(nameof(pdfName));
-            
+
             var inputPdfPath = Path.Combine(AppSettings.JobDir, pdfName);
             if (!File.Exists(inputPdfPath)) throw new FileNotFoundException("PDF file not found in JobWell.", inputPdfPath);
             if (string.IsNullOrWhiteSpace(AdobeReaderPath)) throw new InvalidOperationException("Adobe Reader path not set.");
             if (!File.Exists(AdobeReaderPath)) throw new FileNotFoundException("Adobe Reader executable not found.", AdobeReaderPath);
 
-            // command line arguments for adobe reader
             string arguments = $"/t \"{inputPdfPath}\" \"{printerName}\"";
 
             var psi = new System.Diagnostics.ProcessStartInfo
@@ -430,24 +452,61 @@ namespace MyWpfApp.Model
                 Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                WorkingDirectory = Path.GetDirectoryName(AdobeReaderPath) ?? Environment.CurrentDirectory
             };
 
             int pageCount = 0;
-           using (PdfDocument input = PdfReader.Open(inputPdfPath, PdfDocumentOpenMode.Import))
+            try
             {
-                pageCount = input.PageCount;
+                using (PdfDocument input = PdfReader.Open(inputPdfPath, PdfDocumentOpenMode.Import))
+                {
+                    pageCount = input.PageCount;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Surface PDF reader errors immediately with context
+                var msg = $"Failed to open PDF '{inputPdfPath}' before printing: {ex.Message}";
+                throw new InvalidOperationException(msg, ex);
             }
 
             Debug.WriteLine("starting process for print");
             System.Diagnostics.Process proc = null;
             try
             {
-                proc = System.Diagnostics.Process.Start(psi);
-                if (proc == null)
-                    throw new InvalidOperationException("Failed to start Adobe Reader process.");
+                try
+                {
+                    proc = System.Diagnostics.Process.Start(psi);
+                    if (proc == null)
+                        throw new InvalidOperationException("Failed to start Adobe Reader process (Process.Start returned null).");
+                }
+                catch (Exception startEx)
+                {
+                    // Build richer diagnostic message to help identify why Process.Start failed
+                    var diagnostics = new StringBuilder();
+                    diagnostics.AppendLine("Failed to start Adobe Reader process.");
+                    diagnostics.AppendLine($"FileName: {psi.FileName}");
+                    diagnostics.AppendLine($"Arguments: {psi.Arguments}");
+                    diagnostics.AppendLine($"UseShellExecute: {psi.UseShellExecute}");
+                    diagnostics.AppendLine($"CreateNoWindow: {psi.CreateNoWindow}");
+                    diagnostics.AppendLine($"WorkingDirectory: {psi.WorkingDirectory}");
+                    diagnostics.AppendLine($"AdobeReaderPath exists: {File.Exists(AdobeReaderPath)}");
+                    try { diagnostics.AppendLine($"AdobeReaderPath attrs: {File.GetAttributes(AdobeReaderPath)}"); } catch { }
+                    diagnostics.AppendLine($"CurrentUser: {Environment.UserName}");
+                    diagnostics.AppendLine($"OSVersion: {Environment.OSVersion}");
+                    diagnostics.AppendLine($"Exception: {startEx.GetType().FullName}: {startEx.Message}");
+                    diagnostics.AppendLine(startEx.ToString());
 
-                TimeSpan timeoutMs = TimeSpan.FromMinutes(30); // 30 minute timeout for print job completion
+                    var diagMsg = diagnostics.ToString();
+                    try { ActivityLogger.LogAction("PrintProcessStartError", diagMsg); } catch { }
+                    Debug.WriteLine(diagMsg);
+
+                    // Re-throw a wrapped exception with the diagnostics as the message
+                    throw new InvalidOperationException("Failed to start Adobe Reader process. See InnerException and Debug output for details.", startEx);
+                }
+
+                TimeSpan timeoutMs = TimeSpan.FromMinutes(30);
 
                 bool completed;
                 try
@@ -456,19 +515,16 @@ namespace MyWpfApp.Model
                 }
                 catch
                 {
-                    // propagate any exceptions from the spooler waiting logic (e.g. job error states)
                     try { if (proc != null && !proc.HasExited) proc.Kill(); Debug.WriteLine("process timed out"); } catch { }
                     throw;
                 }
 
-                // timed out waiting for spooler -> do not throw, return false per requirement
                 if (!completed)
                 {
                     try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
                     return false;
                 }
 
-                // If process has exited, verify exit code; otherwise treat as success since we observed the print job
                 try
                 {
                     if (proc.HasExited)
@@ -483,7 +539,6 @@ namespace MyWpfApp.Model
                 }
                 catch (Exception ex)
                 {
-                    // Any unexpected error when querying the process state should be surfaced as an exception
                     throw new InvalidOperationException("Failed to verify Adobe Reader process state.", ex);
                 }
 
@@ -491,7 +546,6 @@ namespace MyWpfApp.Model
             }
             finally
             {
-                // Best-effort cleanup: if process still running, attempt to kill it.
                 try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
             }
         }
