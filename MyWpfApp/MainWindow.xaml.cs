@@ -203,7 +203,7 @@ namespace MyWpfApp
             }
         }
 
-        private void RightClickGetFile(object sender, RoutedEventArgs e)
+        private async void RightClickGetFile(object sender, RoutedEventArgs e)
         {
             MenuItem menuItem = sender as MenuItem;
             if (menuItem == null) return;
@@ -246,7 +246,7 @@ namespace MyWpfApp
                                 var jobs = printQueue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
 
                                 //confirm job is not already in the print queue
-                                var existingJob = jobs.FirstOrDefault(j => j.Name.Equals(parentJob.orgPdfName, StringComparison.OrdinalIgnoreCase));
+                                var existingJob = jobs.FirstOrDefault(j => j.Name.Equals(fileContext, StringComparison.OrdinalIgnoreCase));
                                 if (existingJob != null)
                                 {
                                     MessageBox.Show($"Job '{fileContext}' is already in the print queue for printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -260,7 +260,7 @@ namespace MyWpfApp
                                     if (parentPrinter.Status == "Ready" || parentPrinter.Status == "Printing")
                                     {
                                         // Print the job
-                                        var printResult = _printManager.PrintJob(fileContext, parentPrinter.Name);
+                                        var printResult = await _printManager.PrintJobAsync(fileContext, parentPrinter.Name);
                                         if (printResult)
                                         {
                                             MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);

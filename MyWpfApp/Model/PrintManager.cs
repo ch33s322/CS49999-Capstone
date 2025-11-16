@@ -495,7 +495,9 @@ namespace MyWpfApp.Model
             return null;
         }
 
-        public bool PrintJob(string pdfName, string printerName)
+        // -- Printing --
+
+        public async Task<bool> PrintJobAsync(string pdfName, string printerName)
         {
             if (string.IsNullOrWhiteSpace(pdfName)) throw new ArgumentException(nameof(pdfName));
 
@@ -569,7 +571,7 @@ namespace MyWpfApp.Model
                 bool completed;
                 try
                 {
-                    completed = WaitForPrintJobCompletion(printerName, pdfName, pageCount, timeoutMs);
+                    completed = await WaitForPrintJobCompletion(printerName, pdfName, pageCount, timeoutMs);
                 }
                 catch
                 {
@@ -583,54 +585,26 @@ namespace MyWpfApp.Model
                     return false;
                 }
 
-                try
+                // If process has exited, verify exit code; otherwise treat as success since we observed the print job
+                if (completed)
                 {
+                    // Wait briefly for the Adobe Reader process to close gracefully if it hasn't yet,
+                    // but don't care about the exit code since the print job itself succeeded.
+                    proc.WaitForExit(5000); // Wait up to 5 seconds for it to exit
+
+                    // We already confirmed job completion via the spooler, so return success.
+                    return true;
+                }
+                else
+                {
+                    // If spooler did NOT confirm completion (timed out), THEN we should check the process.
                     if (proc.HasExited && proc.ExitCode != 0)
-                        throw new InvalidOperationException($"Adobe Reader exited with code {proc.ExitCode} when printing.");
-                }
-                catch (InvalidOperationException) { throw; }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException("Failed to verify Adobe Reader process state.", ex);
-                }
-
-                // Successful print: delete the split PDF and possibly the empty job.
-                try
-                {
-                    Guid foundJobId;
-                    if (TryFindJobIdBySplitFile(pdfName, out foundJobId))
                     {
-                        var removed = RemoveSplitFileFromJob(foundJobId, pdfName);
-                        try
-                        {
-                            ActivityLogger.LogAction("AutoDeleteSplitAfterPrint",
-                                $"Printed and removed '{pdfName}' from job {foundJobId} (removed:{removed})");
-                        }
-                        catch(Exception ex)
-                        {
-                            Debug.WriteLine($"Exception when looking for job by split PDF file: {ex}");
-                        }
+                        throw new InvalidOperationException($"Adobe Reader exited with code {proc.ExitCode} and spooler status was not confirmed.");
                     }
-                    else
-                    {
-                        TryDeleteSplitFileFromDisk(pdfName);
-                        try
-                        {
-                            ActivityLogger.LogAction("AutoDeleteSplitAfterPrintOrphan",
-                                $"Printed and deleted untracked split '{pdfName}'");
-                        }
-                        catch(Exception ex)
-                        {
-                            Debug.WriteLine($"Exception when trying to automatically delete split PDF after printing: {ex}");
-                        }
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Debug.WriteLine($"Exception when attempting to delete after printing: {ex}");
-                }
 
-                return true;
+                    return true;
+                }
             }
             finally
             {
@@ -638,7 +612,7 @@ namespace MyWpfApp.Model
             }
         }
 
-        private bool WaitForPrintJobCompletion(string printerName, string documentName, int pagesToPrint, TimeSpan timeout)
+        private async Task<bool> WaitForPrintJobCompletion(string printerName, string documentName, int pagesToPrint, TimeSpan timeout)
         {
             var server = new LocalPrintServer();
             PrintQueue queue;
@@ -686,7 +660,7 @@ namespace MyWpfApp.Model
                     Debug.WriteLine($"Exception when waiting for job completion: {ex}");
                 }
 
-                Thread.Sleep(500);
+                await Task.Delay(500);
             }
 
             return false;
