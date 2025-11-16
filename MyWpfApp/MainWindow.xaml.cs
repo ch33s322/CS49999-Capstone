@@ -193,11 +193,9 @@ namespace MyWpfApp
 
         private void RightClickGetFile(object sender, RoutedEventArgs e)
         {
-            // 1. Cast the sender to the clicked MenuItem
             MenuItem menuItem = sender as MenuItem;
             if (menuItem == null) return;
-            // 2. The DataContext of the MenuItem is automatically the DataContext
-            //    of the element the ContextMenu is attached to (the File StackPanel).
+
             string fileContext = menuItem.DataContext as string;
             if (fileContext != null)
             {
@@ -205,7 +203,7 @@ namespace MyWpfApp
 
                 if (dataGrid?.DataContext is PrinterViewModel viewModel)
                 {
-                    //get parent job
+                    //get parent job for the clicked split file
                     Job parentJob = viewModel.GetJobByFileName(fileContext);
 
                     if (parentJob != null)
@@ -284,10 +282,54 @@ namespace MyWpfApp
                                 OpenPdfWithDefaultViewer(fileContext);
                                 break;
                             case "Move Job":
-                                MessageBox.Show($"File Context: Move requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
-                                break;
+                                {
+                                    // gather available printers excluding current and excluding blank/unassigned
+                                    var allPrinters = _printManager.getAllPrinters()
+                                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .OrderBy(p => p)
+                                        .ToList();
+
+                                    // exclude the current printer of this job
+                                    if (!string.IsNullOrWhiteSpace(parentJob.printerName))
+                                    {
+                                        allPrinters = allPrinters
+                                            .Where(p => !string.Equals(p, parentJob.printerName, StringComparison.OrdinalIgnoreCase))
+                                            .ToList();
+                                    }
+
+                                    if (allPrinters.Count == 0)
+                                    {
+                                        MessageBox.Show("There are no other printers to move this split PDF to.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        break;
+                                    }
+
+                                    // show dialog to pick the destination printer
+                                    var dlg = new MoveJobDialog(allPrinters, parentJob) { Owner = this };
+                                    bool? result = dlg.ShowDialog();
+                                    if (result == true && !string.IsNullOrWhiteSpace(dlg.SelectedPrinterName))
+                                    {
+                                        try
+                                        {
+                                            var moved = _printManager.MoveSplitFileToPrinter(parentJob.jobId, fileContext, dlg.SelectedPrinterName);
+                                            if (moved)
+                                            {
+                                                RefreshPrinterViewModels();
+                                                MessageBox.Show($"Split PDF '{fileContext}' moved to printer '{dlg.SelectedPrinterName}'.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                                try { ActivityLogger.LogAction("MoveSplitFile", $"User moved '{fileContext}' from job {parentJob.jobId} to '{dlg.SelectedPrinterName}'"); } catch { }
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Move cancelled or file not found in the job.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            MessageBox.Show($"Failed to move split PDF: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        }
+                                    }
+                                    break;
+                                }
                             case "Remove Job":
                                 // Confirm with the user
                                 var confirm = MessageBox.Show(
@@ -323,15 +365,57 @@ namespace MyWpfApp
                                 break;
                         }
                     }
-                    else
-                    {
-                        //MessageBox.Show($"Parent job not found for file '{fileContext.'}");
-                    }
                 }
             }
             else
             {
                 MessageBox.Show("File context is null.");
+            }
+        }
+
+        private void RightClickMoveJob(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem)
+            {
+                var job = menuItem.DataContext as Job;
+                if (job != null)
+                {
+                    MoveJob(job);
+                }
+            }
+        }
+        private void MoveJob(Job job)
+        {
+            if (job == null) return;
+
+            // Get all printers except current and empty/unassigned
+            var all = _printManager.getAllPrinters()
+                                   .Where(p => !string.IsNullOrWhiteSpace(p) &&
+                                               !string.Equals(p, job.printerName, StringComparison.OrdinalIgnoreCase))
+                                   .OrderBy(p => p)
+                                   .ToList();
+
+            if (all.Count == 0)
+            {
+                MessageBox.Show("There are no other printers to move this job to.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dlg = new MoveJobDialog(all, job) { Owner = this };
+            bool? result = dlg.ShowDialog();
+            if (result == true && !string.IsNullOrWhiteSpace(dlg.SelectedPrinterName))
+            {
+                try
+                {
+                    _printManager.SetJobPrinter(job.jobId, dlg.SelectedPrinterName);
+                    RefreshPrinterViewModels();
+                    MessageBox.Show($"Job '{job.orgPdfName}' moved to printer '{dlg.SelectedPrinterName}'.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                    try { ActivityLogger.LogAction("MoveJob", $"Moved job {job.jobId} to printer '{dlg.SelectedPrinterName}'"); } catch { }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to move job: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -359,15 +443,6 @@ namespace MyWpfApp
             {
                 // Do something with 'job'
                 MessageBox.Show($"Viewing job");
-            }
-        }
-
-        private void RightClickMoveJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Moving job");
             }
         }
 

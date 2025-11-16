@@ -663,5 +663,89 @@ namespace MyWpfApp.Model
 
             return false; // timed out
         }
+
+        // Move a single split PDF from one job to another printer.
+        // If the target printer already has a job from the same original PDF, the file is appended to that job.
+        // Otherwise, a new job containing only this split file is created on the target printer.
+        public bool MoveSplitFileToPrinter(Guid sourceJobId, string splitPdfName, string targetPrinterName)
+        {
+            if (string.IsNullOrWhiteSpace(splitPdfName)) throw new ArgumentException(nameof(splitPdfName));
+            if (targetPrinterName == null) throw new ArgumentNullException(nameof(targetPrinterName));
+
+            lock (_lock)
+            {
+                // locate source job and printer
+                PrinterClass sourcePrinter = null;
+                Job sourceJob = null;
+                foreach (var p in _printers)
+                {
+                    var j = p.Jobs.FirstOrDefault(x => x.jobId == sourceJobId);
+                    if (j != null)
+                    {
+                        sourcePrinter = p;
+                        sourceJob = j;
+                        break;
+                    }
+                }
+                if (sourceJob == null) throw new KeyNotFoundException("Source job not found.");
+
+                // ensure the split file belongs to the source job
+                var idx = sourceJob.fileNames.FindIndex(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase));
+                if (idx < 0) return false; // nothing to move
+
+                // normalize target printer
+                var targetName = targetPrinterName.Trim();
+
+                // if target equals current, nothing to do
+                if (string.Equals(sourceJob.printerName ?? string.Empty, targetName, StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                // find or create target printer entry
+                var targetPrinter = _printers.FirstOrDefault(p => string.Equals(p.Name ?? string.Empty, targetName, StringComparison.OrdinalIgnoreCase));
+                if (targetPrinter == null)
+                {
+                    targetPrinter = new PrinterClass { Name = targetName, Status = "Unknown" };
+                    _printers.Add(targetPrinter);
+                }
+
+                // find an existing job for the same original PDF on the target printer (to aggregate)
+                var targetJob = targetPrinter.Jobs.FirstOrDefault(j =>
+                    string.Equals(j.orgPdfName ?? string.Empty, sourceJob.orgPdfName ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+                if (targetJob == null)
+                {
+                    // create a new job containing only this split file
+                    targetJob = new Job(targetPrinter.Name, new List<string> { splitPdfName }, sourceJob.Simplex, sourceJob.orgPdfName)
+                    {
+                        // jobId defaults to new Guid
+                        dateTime = DateTime.Now
+                    };
+                    targetPrinter.Jobs.Add(targetJob);
+                }
+                else
+                {
+                    // append file if not already present
+                    if (!targetJob.fileNames.Any(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        targetJob.fileNames.Add(splitPdfName);
+                    }
+                }
+
+                // remove the file from the source job
+                sourceJob.fileNames.RemoveAt(idx);
+
+                // remove the empty job from its printer if it no longer holds any files
+                if (sourceJob.fileNames.Count == 0 && sourcePrinter != null)
+                {
+                    sourcePrinter.Jobs.RemoveAll(j => j.jobId == sourceJob.jobId);
+                }
+
+                SavePrinterStore();
+
+                try { ActivityLogger.LogAction("MoveSplitFile", $"Moved '{splitPdfName}' from job {sourceJobId} to printer '{targetPrinter.Name}'"); } catch { }
+
+                return true;
+            }
+        }
     }
 }
