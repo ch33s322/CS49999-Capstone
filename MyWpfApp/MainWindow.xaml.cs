@@ -29,10 +29,27 @@ namespace MyWpfApp
     {
         private readonly PrintManager _printManager;
         public Printer.Model.Printer _selectedPrinter;
+
+        // Poller instance that watches InputDir
+        private MyWpfApp.Model.PollAndArchive _poller;
+        private string _currentPollerInputPath;
+        private string _currentPollerArchivePath;
+        private string _currentPollerJobPath;
+
         public MainWindow()
         {
             InitializeComponent();
             _printManager = new PrintManager();
+
+            // If an Adobe path was previously saved, ensure the PrintManager knows about it
+            try
+            {
+                _printManager.AdobeReaderPath = AppSettings.AdobePath;
+            }
+            catch
+            {
+                // ignore
+            }
            
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
@@ -77,6 +94,60 @@ namespace MyWpfApp
             catch
             {
                 // ignore if control not present or other issue
+            }
+
+            // Initialize InputDir textbox with current setting and persist on lost focus
+            try
+            {
+                InputDir.Text = AppSettings.InputDir;
+                InputDir.LostFocus += InputDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize ArchiveDir textbox with current setting and persist on lost focus
+            try
+            {
+                archiveDirTextBox.Text = AppSettings.ArchiveDir;
+                archiveDirTextBox.LostFocus += ArchiveDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize JobDir textbox with current setting and persist on lost focus
+            try
+            {
+                jobDirTextBox.Text = AppSettings.JobDir;
+                jobDirTextBox.LostFocus += JobDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize Adobe path textbox with current setting and persist on lost focus
+            try
+            {
+                adobePathBox.Text = AppSettings.AdobePath;
+                adobePathBox.LostFocus += AdobePathBox_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Start poller if a valid InputDir is configured
+            try
+            {
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+            }
+            catch
+            {
+                // ignore startup errors
             }
         }
 
@@ -331,7 +402,190 @@ namespace MyWpfApp
 
         private void DirectorySelectTextChanged(object sender, TextChangedEventArgs e)
         {
-            //change current viewed directory
+            // existing wiring in XAML; no immediate persistence here to avoid saving on every keystroke.
+            // Display or other real-time UI reaction could be added here if desired.
+        }
+
+        // Persist InputDir when user finishes editing (LostFocus). Validate and create directory.
+        private void InputDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Input directory cannot be empty.", "Invalid input directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.InputDir;
+                return;
+            }
+
+            try
+            {
+                // Setting AppSettings.InputDir will normalize, create directory (try) and persist
+                AppSettings.InputDir = newPath;
+
+                // Ensure archive and jobwell directories exist before starting poller
+                try { Directory.CreateDirectory(AppSettings.ArchiveDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Input directory set to:\n{AppSettings.InputDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set input directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.InputDir;
+            }
+        }
+
+        // Persist ArchiveDir when user finishes editing (LostFocus). Validate and create directory.
+        private void ArchiveDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Archive directory cannot be empty.", "Invalid archive directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.ArchiveDir;
+                return;
+            }
+
+            try
+            {
+                AppSettings.ArchiveDir = newPath;
+
+                // Ensure directories exist before restarting poller
+                try { Directory.CreateDirectory(AppSettings.InputDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Archive directory set to:\n{AppSettings.ArchiveDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set archive directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.ArchiveDir;
+            }
+        }
+
+        // Persist JobDir when user finishes editing (LostFocus). Validate and create directory.
+        private void JobDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Job directory cannot be empty.", "Invalid job directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.JobDir;
+                return;
+            }
+
+            try
+            {
+                AppSettings.JobDir = newPath;
+
+                // Ensure required directories exist before restarting poller
+                try { Directory.CreateDirectory(AppSettings.InputDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.ArchiveDir); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Job directory set to:\n{AppSettings.JobDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set job directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.JobDir;
+            }
+        }
+
+        // Persist AdobePath when user finishes editing (LostFocus). Normalize and persist.
+        private void AdobePathBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim() ?? string.Empty;
+            try
+            {
+                // Setting AppSettings.AdobePath will normalize (if non-empty) and persist
+                AppSettings.AdobePath = newPath;
+                // Inform PrintManager about the change
+                try { _printManager.AdobeReaderPath = AppSettings.AdobePath; } catch { }
+
+                MessageBox.Show($"Adobe path set to:\n{AppSettings.AdobePath}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set Adobe path: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.AdobePath;
+            }
+        }
+
+        // Start a new PollAndArchive or restart if input or archive or job path changed.
+        private void StartOrRestartPoller(string inputPath, string archivePath, string jobPath)
+        {
+            if (string.IsNullOrWhiteSpace(inputPath) || string.IsNullOrWhiteSpace(archivePath) || string.IsNullOrWhiteSpace(jobPath)) return;
+
+            // If already running for same input, archive and job path, nothing to do
+            if (_poller != null &&
+                string.Equals(_currentPollerInputPath, inputPath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_currentPollerArchivePath, archivePath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_currentPollerJobPath, jobPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // Dispose old poller if present
+            try
+            {
+                if (_poller != null)
+                {
+                    _poller.Dispose();
+                    _poller = null;
+                    _currentPollerInputPath = null;
+                    _currentPollerArchivePath = null;
+                    _currentPollerJobPath = null;
+                }
+            }
+            catch
+            {
+                // swallow disposal errors
+            }
+
+            // Ensure required directories exist
+            try { Directory.CreateDirectory(inputPath); } catch { }
+            try { Directory.CreateDirectory(archivePath); } catch { }
+            try { Directory.CreateDirectory(jobPath); } catch { }
+            try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+            try
+            {
+                // Create and start the new poller (poller uses JobWell as its output)
+                _poller = new MyWpfApp.Model.PollAndArchive(inputPath, archivePath, AppSettings.JobWell);
+                _poller.StartWatching();
+                _currentPollerInputPath = inputPath;
+                _currentPollerArchivePath = archivePath;
+                _currentPollerJobPath = jobPath;
+                Debug.WriteLine($"PollAndArchive started for input: {inputPath}, archive: {archivePath}, jobDir: {jobPath}");
+            }
+            catch (Exception ex)
+            {
+                // If construction fails, clear poller state and notify user
+                try { _poller?.Dispose(); } catch { }
+                _poller = null;
+                _currentPollerInputPath = null;
+                _currentPollerArchivePath = null;
+                _currentPollerJobPath = null;
+                MessageBox.Show($"Failed to start PollAndArchive for '{inputPath}' -> '{archivePath}': {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void PrinterSelectSelectionChanged(object sender, SelectionChangedEventArgs e)
