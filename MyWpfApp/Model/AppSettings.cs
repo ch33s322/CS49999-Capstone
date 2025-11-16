@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
+using MyWpfApp.Utilities;
 
 namespace MyWpfApp.Model
 {
@@ -28,6 +29,7 @@ namespace MyWpfApp.Model
                 {
                     if (!string.Equals(_inputDir, normalized, StringComparison.OrdinalIgnoreCase))
                     {
+                        var old = _inputDir;
                         _inputDir = normalized;
                         try
                         {
@@ -45,6 +47,16 @@ namespace MyWpfApp.Model
                         catch
                         {
                             // swallow to avoid crashing app on save failure
+                        }
+
+                        // Log the change (non-blocking and swallow errors inside logger)
+                        try
+                        {
+                            ActivityLogger.LogChange("InputDir", old, _inputDir);
+                        }
+                        catch
+                        {
+                            // swallow any unexpected logger exception
                         }
                     }
                 }
@@ -65,6 +77,7 @@ namespace MyWpfApp.Model
                 {
                     if (!string.Equals(_archive_dir, normalized, StringComparison.OrdinalIgnoreCase))
                     {
+                        var old = _archive_dir;
                         _archive_dir = normalized;
                         try
                         {
@@ -77,6 +90,16 @@ namespace MyWpfApp.Model
                         try
                         {
                             SaveSettings();
+                        }
+                        catch
+                        {
+                            // swallow
+                        }
+
+                        // Log the change
+                        try
+                        {
+                            ActivityLogger.LogChange("ArchiveDir", old, _archive_dir);
                         }
                         catch
                         {
@@ -101,6 +124,7 @@ namespace MyWpfApp.Model
                 {
                     if (!string.Equals(_jobDir, normalized, StringComparison.OrdinalIgnoreCase))
                     {
+                        var old = _jobDir;
                         _jobDir = normalized;
                         try
                         {
@@ -113,6 +137,16 @@ namespace MyWpfApp.Model
                         try
                         {
                             SaveSettings();
+                        }
+                        catch
+                        {
+                            // swallow
+                        }
+
+                        // Log the change
+                        try
+                        {
+                            ActivityLogger.LogChange("JobDir", old, _jobDir);
                         }
                         catch
                         {
@@ -137,12 +171,27 @@ namespace MyWpfApp.Model
                 {
                     // Normalize non-empty paths to absolute form
                     normalized = NormalizePath(trimmed);
+
+                    // Try to resolve to an actual executable path if user provided a folder or partial path
+                    try
+                    {
+                        var resolvedExe = ResolveAdobeExecutablePath(normalized);
+                        if (!string.IsNullOrEmpty(resolvedExe))
+                        {
+                            normalized = resolvedExe;
+                        }
+                    }
+                    catch
+                    {
+                        // resolution failure should not prevent storing normalized value
+                    }
                 }
 
                 lock (_sync)
                 {
                     if (!string.Equals(_adobePath, normalized, StringComparison.OrdinalIgnoreCase))
                     {
+                        var old = _adobePath;
                         _adobePath = normalized;
                         try
                         {
@@ -152,9 +201,59 @@ namespace MyWpfApp.Model
                         {
                             // swallow to avoid crashing app on save failure
                         }
+
+                        // Log the change (allow empty new value)
+                        try
+                        {
+                            ActivityLogger.LogChange("AdobePath", old, _adobePath);
+                        }
+                        catch
+                        {
+                            // swallow
+                        }
                     }
                 }
             }
+        }
+
+        // Attempt to resolve given path into an Adobe executable full path.
+        // Accepts either a direct exe path, a directory containing a known exe, or a path that can be combined with common exe names.
+        private static string ResolveAdobeExecutablePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            try
+            {
+                // If it's already an existing file, accept it
+                if (File.Exists(path)) return Path.GetFullPath(path);
+
+                // If it's a directory, search for common adobe exe names
+                if (Directory.Exists(path))
+                {
+                    var candidates = new[] { "AcroRd32.exe", "AcroRd64.exe", "Acrobat.exe" };
+                    foreach (var c in candidates)
+                    {
+                        var p = Path.Combine(path, c);
+                        if (File.Exists(p)) return Path.GetFullPath(p);
+                    }
+                }
+
+                // Same as above, but if user doesn't enter trailing backslash
+                var fallbackCandidates = new[] { "AcroRd32.exe", "AcroRd64.exe", "Acrobat.exe" };
+                foreach (var c in fallbackCandidates)
+                {
+                    try
+                    {
+                        var combined = Path.Combine(path, c);
+                        if (File.Exists(combined)) return Path.GetFullPath(combined);
+                    }
+                    catch { }
+                }
+            }
+            catch
+            {
+                // swallow resolution errors
+            }
+            return null;
         }
 
         //folder path to output of polling and archive system
@@ -182,6 +281,7 @@ namespace MyWpfApp.Model
                 {
                     if (_maxPages != value)
                     {
+                        var old = _maxPages;
                         _maxPages = value;
                         try
                         {
@@ -189,6 +289,16 @@ namespace MyWpfApp.Model
                         }
                         catch
                         {
+                        }
+
+                        // Log the change (non-blocking and swallow errors inside logger)
+                        try
+                        {
+                            ActivityLogger.LogChange("MaxPages", old, value);
+                        }
+                        catch
+                        {
+                            // swallow any unexpected logger exception
                         }
                     }
                 }
@@ -200,7 +310,6 @@ namespace MyWpfApp.Model
         {
             // Load persisted settings first so directories are created for configured paths
             LoadSettings();
-            // Ensure directories exist (uses the possibly overridden InputDir/ArchiveDir/JobDir)
             EnsureDirectoriesExist();
         }
 
