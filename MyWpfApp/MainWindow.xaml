@@ -5,180 +5,165 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:Printer.ViewModel"  
         xmlns:printerModel="clr-namespace:Printer.Model" 
-        
         xmlns:jobModel="clr-namespace:MyWpfApp.Model"
         xmlns:fsvm="clr-namespace:FileSystem.ViewModel"    
         xmlns:fsm="clr-namespace:FileSystemItemModel.Model" 
         xmlns:local="clr-namespace:MyWpfApp"
         mc:Ignorable="d"
-        Title="MainWindow" Height="720" Width="1280">
-
+        Title="DocReformed" Height="720" Width="1280">
 
     <Grid>
-        <TabControl Width="1260" Height="684" VerticalAlignment="Center" HorizontalAlignment="Center" >
-            <!-- Tab 1 -->
-            <TabItem Header="Print Job Manager">
-                <Grid Margin="0,0,10,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="106*"/>
-                        <ColumnDefinition Width="53*"/>
-                        <ColumnDefinition Width="463*"/>
-                    </Grid.ColumnDefinitions>
+        <Viewbox Stretch="Uniform" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabControl Width="1260" Height="684" Margin="10,0,10,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TabItem Header="Print Job Manager">
+                    <Grid Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="106*"/>
+                            <ColumnDefinition Width="53*"/>
+                            <ColumnDefinition Width="463*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <ComboBox Name="PrinterSelect" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Height="39" Width="154" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged">
-                        <ComboBox.DataContext>
-                            <vm:PrinterViewModel/>
-                        </ComboBox.DataContext>
-                    </ComboBox>
-
-                    <CheckBox Name="SimplexDuplexCheckBox" Checked="SimplexDuplexCheckBoxChecked" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="9,26,0,0" Height="14" Width="15" RenderTransformOrigin="0.733,-2.067" Grid.Column="1"/>
-
-                    <Button Name="SendJob" Width="100" Height="39"
-                    VerticalAlignment="Top" HorizontalAlignment="Left"
-                    Content="Send Job" FontSize="20" Margin="37,10,0,0" Click="SendJobClick" RenderTransformOrigin="0.5,-0.845" Grid.Column="1" Grid.ColumnSpan="2"/>
-
-                    <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="164,16,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center" Grid.ColumnSpan="2"/>
-
-                    <TreeView Name="fileTreeView" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,54,0,0" Width="339" Height="602" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
-                        <TreeView.DataContext>
-                            <fsvm:FileSyetemViewModel/>
-                        </TreeView.DataContext>
-                        <TreeView.Resources>
-                            <HierarchicalDataTemplate DataType="{x:Type fsm:FileSystemItem}" ItemsSource="{Binding Children}">
-                                <TextBlock Text="{Binding Name}" />
-                            </HierarchicalDataTemplate>
-                        </TreeView.Resources>
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
-                                <Setter Property="IsExpanded" Value="true" />
-                            </Style>
-                        </TreeView.ItemContainerStyle>
-                    </TreeView>
-
-                    <!--<DataGrid Name="DirectoryViewer"  VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,106,0,0" Width="339" Height="588">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Icon" Binding="{Binding Icon}" Width="50"/>
-                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="*"/>
-                <DataGridTextColumn Header="File Type" Binding="{Binding FileType}" Width="*"/>
-            </DataGrid.Columns>
-        </DataGrid>-->
-                    <!-- Print Manager GroupBox-->
-                    <GroupBox Height="684" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Width="900" Grid.Column="2">
-                        <DataGrid Name="PrintJobManager" 
-                                  ItemsSource="{Binding AvailablePrinters}" 
-                                  Height="638" Width="896" 
-                                  VerticalAlignment="Top" 
-                                  HorizontalAlignment="Left" 
-                                  SelectionChanged="PrintJobManager_SelectionChanged"
-                                  AutoGenerateColumns="False"
-                                  RowDetailsVisibilityMode="Visible"
-                                  CanUserAddRows="False"
-                                  IsReadOnly="True">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Printer Name" Binding="{Binding Name}" Width="Auto"/>
-                                <DataGridTemplateColumn Header="Job Details" Width="*">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TreeView Name="JobDetailsTreeView"
-                                              ItemsSource="{Binding Jobs}">
-                                                <TreeView.Resources>
-                                                    <HierarchicalDataTemplate DataType="{x:Type printerModel:Printer}" 
-                                                      ItemsSource="{Binding Jobs}">
-                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="DarkGreen"/>
-                                                    </HierarchicalDataTemplate>
-
-                                                    <DataTemplate DataType="{x:Type jobModel:Job}">
-                                                        <StackPanel>
-
-                                                            <StackPanel.ContextMenu>
-                                                                <ContextMenu>
-                                                                    <MenuItem Header="View Job" Click="RightClickGetJob"/>
-                                                                    <MenuItem Header="Remove Job" Click="RightClickGetJob"/>
-                                                                </ContextMenu>
-                                                            </StackPanel.ContextMenu>
-                                                            <StackPanel Orientation="Horizontal">
-                                                                <TextBlock Text="Job: "/>
-                                                                <TextBlock Text="{Binding orgPdfName}" 
-                                                                           Foreground="Black"/>
-                                                            </StackPanel>
-
-                                                            <ItemsControl ItemsSource="{Binding fileNames}" Margin="15,0,0,0">
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate>
-                                                                        <Button Content="{Binding .}" 
-                                                                                Padding="0"
-                                                                                HorizontalAlignment="Left"
-                                                                                Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
-                                                                            <Button.ContextMenu>
-                                                                                <ContextMenu>
-                                                                                    <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
-                                                                                    <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
-                                                                                    <MenuItem Header="View Job" Click="RightClickGetFile"   />
-                                                                                    <MenuItem Header="Move Job" Click="RightClickGetFile"   />
-                                                                                </ContextMenu>
-                                                                            </Button.ContextMenu>
-
-                                                                            
-                                                                        </Button>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                    
-
-                                                </TreeView.Resources>
-                                            </TreeView>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                            </DataGrid.Columns>
-                            
-
-                            <DataGrid.DataContext>
+                        <ComboBox Name="PrinterSelect" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged">
+                            <ComboBox.DataContext>
                                 <vm:PrinterViewModel/>
-                            </DataGrid.DataContext>
+                            </ComboBox.DataContext>
+                        </ComboBox>
 
-                        </DataGrid>
+                        <CheckBox Name="SimplexDuplexCheckBox" Checked="SimplexDuplexCheckBoxChecked" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="9,26,0,0" Height="14" Width="15" RenderTransformOrigin="0.733,-2.067" Grid.Column="1" Visibility="Collapsed"/>
 
-                    </GroupBox>
-                </Grid>
-            </TabItem>
-            <!-- Tab 2  -->
-            <TabItem Header="Settings">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="8*"/>
-                        <ColumnDefinition Width="201*"/>
-                    </Grid.ColumnDefinitions>
-                    <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="InputDir" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
-                    <Label Content="Adobe Path" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="adobePathBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="archiveDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="jobDirTextBox" Width="234" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,71,0,0" FontSize="12" Grid.Column="1" />
-                    <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <ComboBox Name="printerPickComboBox" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
-                    <Button Name="AddPrinterButton" Content="Add" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
-                    <Label Content="Remove Printer" Margin="0,120,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" Width="200" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,120,0,0" FontSize="12" Grid.Column="1">
-                        <ComboBox.DataContext>
-                            <vm:PrinterViewModel/>
-                        </ComboBox.DataContext>
-                    </ComboBox>
-                    <Button Name="RemovePrinterButton" Content="Remove" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
-                    <Label Content="Max Pages per Split" Margin="0,150,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                    <TextBox Name="MaxPagesTextBox" Width="100" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="150,150,0,0" FontSize="12" Grid.Column="1"/>
-                    <Button Name="ApplyMaxPagesButton" Content="Apply" Width="60" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,150,0,0" Click="ApplyMaxPagesButton_Click" Grid.Column="1"/>
-                    <TextBlock Name="MaxPagesValidationLabel" Foreground="Red" Margin="52,176,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"/>
-                </Grid>
-            </TabItem>
-        </TabControl>
+                        <Button Name="SendJob"
+                                VerticalAlignment="Top" HorizontalAlignment="Left"
+                                Content="Send Job" FontSize="20" Margin="37,10,0,0" Click="SendJobClick" RenderTransformOrigin="0.5,-0.845" Grid.Column="1" Grid.ColumnSpan="2"/>
 
+                        <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="164,16,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center" Grid.ColumnSpan="2" Visibility="Collapsed"/>
 
+                        <TreeView Name="fileTreeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,54,0,0" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
+                            <TreeView.DataContext>
+                                <fsvm:FileSyetemViewModel/>
+                            </TreeView.DataContext>
+                            <TreeView.Resources>
+                                <HierarchicalDataTemplate DataType="{x:Type fsm:FileSystemItem}" ItemsSource="{Binding Children}">
+                                    <TextBlock Text="{Binding Name}" />
+                                </HierarchicalDataTemplate>
+                            </TreeView.Resources>
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                                    <Setter Property="IsExpanded" Value="true" />
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+
+                        <GroupBox VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Grid.Column="2">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <DataGrid Name="PrintJobManager" 
+                                          ItemsSource="{Binding AvailablePrinters}" 
+                                          VerticalAlignment="Stretch" 
+                                          HorizontalAlignment="Stretch" 
+                                          SelectionChanged="PrintJobManager_SelectionChanged"
+                                          AutoGenerateColumns="False"
+                                          RowDetailsVisibilityMode="Visible"
+                                          CanUserAddRows="False"
+                                          IsReadOnly="True"
+                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Printer Name" Binding="{Binding Name}" Width="Auto"/>
+                                        <DataGridTemplateColumn Header="Job Details" Width="*">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TreeView Name="JobDetailsTreeView"
+                                                              ItemsSource="{Binding Jobs}">
+                                                        <TreeView.Resources>
+                                                            <HierarchicalDataTemplate DataType="{x:Type printerModel:Printer}" 
+                                                              ItemsSource="{Binding Jobs}">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="DarkGreen"/>
+                                                            </HierarchicalDataTemplate>
+
+                                                            <DataTemplate DataType="{x:Type jobModel:Job}">
+                                                                <StackPanel>
+                                                                    <StackPanel.ContextMenu>
+                                                                        <ContextMenu>
+                                                                            <MenuItem Header="View Job" Click="RightClickGetJob"/>
+                                                                            <MenuItem Header="Remove Job" Click="RightClickGetJob"/>
+                                                                            <MenuItem Header="Move Job" Click="RightClickMoveJob"/>
+                                                                        </ContextMenu>
+                                                                    </StackPanel.ContextMenu>
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="Job: "/>
+                                                                        <TextBlock Text="{Binding orgPdfName}" 
+                                                                                   Foreground="Black"/>
+                                                                    </StackPanel>
+
+                                                                    <ItemsControl ItemsSource="{Binding fileNames}" Margin="15,0,0,0">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Button Content="{Binding .}" 
+                                                                                        Padding="0"
+                                                                                        HorizontalAlignment="Left"
+                                                                                        Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+                                                                                    <Button.ContextMenu>
+                                                                                        <ContextMenu>
+                                                                                            <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
+                                                                                            <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
+                                                                                            <MenuItem Header="View Job" Click="RightClickGetFile"/>
+                                                                                            <MenuItem Header="Move Job" Click="RightClickGetFile"/>
+                                                                                        </ContextMenu>
+                                                                                    </Button.ContextMenu>
+                                                                                </Button>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </TreeView.Resources>
+                                                    </TreeView>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+
+                                    <DataGrid.DataContext>
+                                        <vm:PrinterViewModel/>
+                                    </DataGrid.DataContext>
+                                </DataGrid>
+                            </ScrollViewer>
+                        </GroupBox>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Settings">
+                    <!-- (Unchanged) -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="8*"/>
+                            <ColumnDefinition Width="201*"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- Settings content unchanged -->
+                        <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <TextBox Name="InputDir" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
+                        <Label Content="Adobe Path" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <TextBox Name="adobePathBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
+                        <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <TextBox Name="archiveDirTextBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
+                        <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <TextBox Name="jobDirTextBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,71,0,0" FontSize="12" Grid.Column="1" />
+                        <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <ComboBox Name="printerPickComboBox" MinWidth="200" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
+                        <Button Name="AddPrinterButton" Content="Add" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
+                        <Label Content="Remove Printer" Margin="0,120,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" MinWidth="200" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,120,0,0" FontSize="12" Grid.Column="1">
+                            <ComboBox.DataContext>
+                                <vm:PrinterViewModel/>
+                            </ComboBox.DataContext>
+                        </ComboBox>
+                        <Button Name="RemovePrinterButton" Content="Remove" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
+                        <Label Content="Max Pages per Split" Margin="0,150,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
+                        <TextBox Name="MaxPagesTextBox" MinWidth="100" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="150,150,0,0" FontSize="12" Grid.Column="1"/>
+                        <Button Name="ApplyMaxPagesButton" Content="Apply" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,150,0,0" Click="ApplyMaxPagesButton_Click" Grid.Column="1"/>
+                        <TextBlock Name="MaxPagesValidationLabel" Foreground="Red" Margin="52,176,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Column="1"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Viewbox>
     </Grid>
 </Window>

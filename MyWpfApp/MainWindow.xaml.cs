@@ -1,5 +1,7 @@
 ﻿using FileSystemItemModel.Model;
 using MyWpfApp.Model;
+using static MyWpfApp.Model.PdfUtil;
+using MyWpfApp.Utilities;
 using Printer.ViewModel;
 using System;
 using System.Collections;
@@ -28,15 +30,45 @@ namespace MyWpfApp
     public partial class MainWindow : Window
     {
         private readonly PrintManager _printManager;
+        public Printer.Model.Printer _selectedPrinter;
+
+        // Poller instance that watches InputDir
+        private MyWpfApp.Model.PollAndArchive _poller;
+        private string _currentPollerInputPath;
+        private string _currentPollerArchivePath;
+        private string _currentPollerJobPath;
 
         public MainWindow()
         {
             InitializeComponent();
             _printManager = new PrintManager();
+            _printManager.JobsChanged += PrintManager_JobsChanged;
 
+            // If an Adobe path was previously saved, ensure the PrintManager knows about it
+            try
+            {
+                _printManager.AdobeReaderPath = AppSettings.AdobePath;
+            }
+            catch
+            {
+                // ignore
+            }
+           
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
+            // Ensure the printer dropdown shows the initial placeholder when no selection exists.
+            // (ComboBox controls are available after InitializeComponent.)
+            try
+            {
+                PrinterSelect.SelectedIndex = -1;
+                PrinterSelect.Text = "Select Printer";
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
             // Populate the add printers combo with installed printers on the machine
             try
             {
@@ -48,6 +80,7 @@ namespace MyWpfApp
                 }
                 printerPickComboBox.ItemsSource = list;
                 if (list.Any()) printerPickComboBox.SelectedIndex = 0;
+                
             }
             catch (Exception ex)
             {
@@ -65,6 +98,71 @@ namespace MyWpfApp
             {
                 // ignore if control not present or other issue
             }
+
+            // Initialize InputDir textbox with current setting and persist on lost focus
+            try
+            {
+                InputDir.Text = AppSettings.InputDir;
+                InputDir.LostFocus += InputDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize ArchiveDir textbox with current setting and persist on lost focus
+            try
+            {
+                archiveDirTextBox.Text = AppSettings.ArchiveDir;
+                archiveDirTextBox.LostFocus += ArchiveDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize JobDir textbox with current setting and persist on lost focus
+            try
+            {
+                jobDirTextBox.Text = AppSettings.JobDir;
+                jobDirTextBox.LostFocus += JobDir_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Initialize Adobe path textbox with current setting and persist on lost focus
+            try
+            {
+                adobePathBox.Text = AppSettings.AdobePath;
+                adobePathBox.LostFocus += AdobePathBox_LostFocus;
+            }
+            catch
+            {
+                // ignore if control not present
+            }
+
+            // Start poller if a valid InputDir is configured
+            try
+            {
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+            }
+            catch
+            {
+                // ignore startup errors
+            }
+        }
+        private void PrintManager_JobsChanged(object sender, EventArgs e)
+        {
+            RefreshPrinterViewModels(); // reuse existing method to rebuild view-models
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _printManager.JobsChanged -= PrintManager_JobsChanged;
+            try { _poller?.Dispose(); } catch { }
+            base.OnClosed(e);
         }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
@@ -95,10 +193,11 @@ namespace MyWpfApp
                 switch (header)
                 {
                     case "View Job":
-                        MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        //MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        OpenPdfWithDefaultViewer(jobContext.orgPdfName);
                         break;
                     case "Remove Job":
-                        MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        //MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
                         break;
                 }
             }
@@ -106,11 +205,9 @@ namespace MyWpfApp
 
         private async void RightClickGetFile(object sender, RoutedEventArgs e)
         {
-            // 1. Cast the sender to the clicked MenuItem
             MenuItem menuItem = sender as MenuItem;
             if (menuItem == null) return;
-            // 2. The DataContext of the MenuItem is automatically the DataContext
-            //    of the element the ContextMenu is attached to (the File StackPanel).
+
             string fileContext = menuItem.DataContext as string;
             if (fileContext != null)
             {
@@ -118,7 +215,7 @@ namespace MyWpfApp
 
                 if (dataGrid?.DataContext is PrinterViewModel viewModel)
                 {
-                    //get parent job
+                    //get parent job for the clicked split file
                     Job parentJob = viewModel.GetJobByFileName(fileContext);
 
                     if (parentJob != null)
@@ -132,6 +229,16 @@ namespace MyWpfApp
                         switch (header)
                         {
                             case "Print Job":
+
+                                // Log user-initiated print action (non-blocking)
+                                try
+                                {
+                                    ActivityLogger.LogAction("PrintJob", $"User requested printing file '{fileContext}' to printer '{parentPrinter?.Name ?? "Unknown"}'");
+                                }
+                                catch(Exception ex)
+                                {
+                                    Debug.WriteLine($"Exception when logging print job: {ex}");
+                                }
 
                                 var server = new LocalPrintServer();
                                 var printQueue = server.GetPrintQueue(parentPrinter.Name);
@@ -157,35 +264,117 @@ namespace MyWpfApp
                                         if (printResult)
                                         {
                                             MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                            // Log successful send
+                                            try
+                                            {
+                                                ActivityLogger.LogAction("PrintJobSuccess", $"File '{fileContext}' sent to printer '{parentPrinter.Name}'");
+                                            }
+                                            catch(Exception ex) { Debug.WriteLine($"Exception when validating print success: {ex}"); }
                                         }
                                         else
                                         {
                                             MessageBox.Show($"Failed to send job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                                            // Log failure
+                                            try
+                                            {
+                                                ActivityLogger.LogAction("PrintJobFailure", $"Failed to send file '{fileContext}' to printer '{parentPrinter.Name}'");
+                                            }
+                                            catch(Exception ex) { Debug.WriteLine($"Exception when validating print failure: {ex}"); }
                                         }
                                     }
                                 }
 
                                 break;
                             case "View Job":
-                                MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+                                OpenPdfWithDefaultViewer(fileContext);
                                 break;
                             case "Move Job":
-                                MessageBox.Show($"File Context: Move requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
-                                break;
+                                {
+                                    // gather available printers excluding current and excluding blank/unassigned
+                                    var allPrinters = _printManager.getAllPrinters()
+                                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                                        .OrderBy(p => p)
+                                        .ToList();
+
+                                    // exclude the current printer of this job
+                                    if (!string.IsNullOrWhiteSpace(parentJob.printerName))
+                                    {
+                                        allPrinters = allPrinters
+                                            .Where(p => !string.Equals(p, parentJob.printerName, StringComparison.OrdinalIgnoreCase))
+                                            .ToList();
+                                    }
+
+                                    if (allPrinters.Count == 0)
+                                    {
+                                        MessageBox.Show("There are no other printers to move this split PDF to.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        break;
+                                    }
+
+                                    // show dialog to pick the destination printer
+                                    var dlg = new MoveJobDialog(allPrinters, parentJob) { Owner = this };
+                                    bool? result = dlg.ShowDialog();
+                                    if (result == true && !string.IsNullOrWhiteSpace(dlg.SelectedPrinterName))
+                                    {
+                                        try
+                                        {
+                                            var moved = _printManager.MoveSplitFileToPrinter(parentJob.jobId, fileContext, dlg.SelectedPrinterName);
+                                            if (moved)
+                                            {
+                                                RefreshPrinterViewModels();
+                                                MessageBox.Show($"Split PDF '{fileContext}' moved to printer '{dlg.SelectedPrinterName}'.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                                try { ActivityLogger.LogAction("MoveSplitFile", $"User moved '{fileContext}' from job {parentJob.jobId} to '{dlg.SelectedPrinterName}'"); }
+                                                catch(Exception ex) { Debug.WriteLine($"Exception when logging job move: {ex}"); }
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("Move cancelled or file not found in the job.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            MessageBox.Show($"Failed to move split PDF: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        }
+                                    }
+                                    break;
+                                }
                             case "Remove Job":
-                                MessageBox.Show($"File Context: Remove requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+                                // Confirm with the user
+                                var confirm = MessageBox.Show(
+                                    $"Are you sure you want to remove '{fileContext}' from job '{parentJob.orgPdfName}'?",
+                                    "Confirm Remove",
+                                    MessageBoxButton.YesNo,
+                                    MessageBoxImage.Question);
+
+                                if (confirm != MessageBoxResult.Yes)
+                                    break;
+
+                                try
+                                {
+                                    bool removed = _printManager.RemoveSplitFileFromJob(parentJob.jobId, fileContext);
+                                    if (removed)
+                                    {
+                                        // Refresh view-models so UI reflects the removed split file
+                                        RefreshPrinterViewModels();
+
+                                        MessageBox.Show($"Removed file '{fileContext}' from job '{parentJob.orgPdfName}'.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        try { ActivityLogger.LogAction("RemoveSplitFile", $"User removed '{fileContext}' from job {parentJob.jobId}"); }
+                                        catch(Exception ex) { Debug.WriteLine($"Exception when logging job removal: {ex}"); }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show($"Failed to remove '{fileContext}'. It may not be part of the job or deletion failed.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"Error removing file '{fileContext}': {ex.Message}", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                }
+
                                 break;
                         }
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Parent job not found for file '{fileContext}'.");
                     }
                 }
             }
@@ -195,39 +384,49 @@ namespace MyWpfApp
             }
         }
 
-        private void RightClickPrintJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem )
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Printing job");
-            }
-        }
-
-        private void RightClickRemoveJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Removing job");
-            }
-        }
-
-        private void RightClickViewJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Viewing job");
-            }
-        }
-
         private void RightClickMoveJob(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem)
             {
-                // Do something with 'job'
-                MessageBox.Show($"Moving job");
+                var job = menuItem.DataContext as Job;
+                if (job != null)
+                {
+                    MoveJob(job);
+                }
+            }
+        }
+        private void MoveJob(Job job)
+        {
+            if (job == null) return;
+
+            // Get all printers except current and empty/unassigned
+            var all = _printManager.getAllPrinters()
+                                   .Where(p => !string.IsNullOrWhiteSpace(p) &&
+                                               !string.Equals(p, job.printerName, StringComparison.OrdinalIgnoreCase))
+                                   .OrderBy(p => p)
+                                   .ToList();
+
+            if (all.Count == 0)
+            {
+                MessageBox.Show("There are no other printers to move this job to.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dlg = new MoveJobDialog(all, job) { Owner = this };
+            bool? result = dlg.ShowDialog();
+            if (result == true && !string.IsNullOrWhiteSpace(dlg.SelectedPrinterName))
+            {
+                try
+                {
+                    _printManager.SetJobPrinter(job.jobId, dlg.SelectedPrinterName);
+                    RefreshPrinterViewModels();
+                    MessageBox.Show($"Job '{job.orgPdfName}' moved to printer '{dlg.SelectedPrinterName}'.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                    try { ActivityLogger.LogAction("MoveJob", $"Moved job {job.jobId} to printer '{dlg.SelectedPrinterName}'"); } catch { }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to move job: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
@@ -237,8 +436,8 @@ namespace MyWpfApp
             var sendButton = sender as Button;
 
             // Determine selected printer from the PrinterSelect combobox
-            var selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
-            string printerName = selectedPrinter?.Name;
+            _selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
+            string printerName = _selectedPrinter?.Name;
             Debug.WriteLine(printerName);
 
             if (string.IsNullOrWhiteSpace(printerName))
@@ -288,10 +487,14 @@ namespace MyWpfApp
                     Debug.WriteLine("Job queued.");
                     // Refresh view-models so UI reflects new job (the app currently creates separate VMs in XAML)
                     var vm = new Printer.ViewModel.PrinterViewModel();
-                    PrinterSelect.DataContext = vm;
+                    //PrinterSelect.DataContext = vm; <-- obsolete, wipes the select printer dropdown on each 'send job' click
                     PrintJobManager.DataContext = vm;
                 });
 
+                if (File.Exists(AppSettings.JobWell  +  "\\" + pdfName))
+                {
+                    File.Delete(AppSettings.JobWell + "\\" + pdfName);                  
+                }
                 MessageBox.Show($"Job created and queued for printer '{printerName}'.", "Send Job", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (System.IO.FileNotFoundException fnf)
@@ -314,12 +517,199 @@ namespace MyWpfApp
 
         private void DirectorySelectTextChanged(object sender, TextChangedEventArgs e)
         {
-            //change current viewed directory
+            // existing wiring in XAML; no immediate persistence here to avoid saving on every keystroke.
+            // Display or other real-time UI reaction could be added here if desired.
+        }
+
+        // Persist InputDir when user finishes editing (LostFocus). Validate and create directory.
+        private void InputDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Input directory cannot be empty.", "Invalid input directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.InputDir;
+                return;
+            }
+
+            try
+            {
+                // Setting AppSettings.InputDir will normalize, create directory (try) and persist
+                AppSettings.InputDir = newPath;
+
+                // Ensure archive and jobwell directories exist before starting poller
+                try { Directory.CreateDirectory(AppSettings.ArchiveDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Input directory set to:\n{AppSettings.InputDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set input directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.InputDir;
+            }
+        }
+
+        // Persist ArchiveDir when user finishes editing (LostFocus). Validate and create directory.
+        private void ArchiveDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Archive directory cannot be empty.", "Invalid archive directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.ArchiveDir;
+                return;
+            }
+
+            try
+            {
+                AppSettings.ArchiveDir = newPath;
+
+                // Ensure directories exist before restarting poller
+                try { Directory.CreateDirectory(AppSettings.InputDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Archive directory set to:\n{AppSettings.ArchiveDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set archive directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.ArchiveDir;
+            }
+        }
+
+        // Persist JobDir when user finishes editing (LostFocus). Validate and create directory.
+        private void JobDir_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newPath))
+            {
+                MessageBox.Show("Job directory cannot be empty.", "Invalid job directory", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tb.Text = AppSettings.JobDir;
+                return;
+            }
+
+            try
+            {
+                AppSettings.JobDir = newPath;
+
+                // Ensure required directories exist before restarting poller
+                try { Directory.CreateDirectory(AppSettings.InputDir); } catch { }
+                try { Directory.CreateDirectory(AppSettings.ArchiveDir); } catch { }
+
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
+
+                MessageBox.Show($"Job directory set to:\n{AppSettings.JobDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set job directory: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.JobDir;
+            }
+        }
+
+        // Persist AdobePath when user finishes editing (LostFocus). Normalize and persist.
+        private void AdobePathBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            var tb = sender as TextBox;
+            if (tb == null) return;
+
+            var newPath = tb.Text?.Trim() ?? string.Empty;
+            try
+            {
+                // Setting AppSettings.AdobePath will normalize (if non-empty) and persist
+                AppSettings.AdobePath = newPath;
+                // Inform PrintManager about the change
+                try { _printManager.AdobeReaderPath = AppSettings.AdobePath; } catch { }
+
+                MessageBox.Show($"Adobe path set to:\n{AppSettings.AdobePath}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to set Adobe path: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                tb.Text = AppSettings.AdobePath;
+            }
+        }
+
+        // Start a new PollAndArchive or restart if input or archive or job path changed.
+        private void StartOrRestartPoller(string inputPath, string archivePath, string jobPath)
+        {
+            if (string.IsNullOrWhiteSpace(inputPath) || string.IsNullOrWhiteSpace(archivePath) || string.IsNullOrWhiteSpace(jobPath)) return;
+
+            // If already running for same input, archive and job path, nothing to do
+            if (_poller != null &&
+                string.Equals(_currentPollerInputPath, inputPath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_currentPollerArchivePath, archivePath, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_currentPollerJobPath, jobPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // Dispose old poller if present
+            try
+            {
+                if (_poller != null)
+                {
+                    _poller.Dispose();
+                    _poller = null;
+                    _currentPollerInputPath = null;
+                    _currentPollerArchivePath = null;
+                    _currentPollerJobPath = null;
+                }
+            }
+            catch
+            {
+                // swallow disposal errors
+            }
+
+            // Ensure required directories exist
+            try { Directory.CreateDirectory(inputPath); } catch { }
+            try { Directory.CreateDirectory(archivePath); } catch { }
+            try { Directory.CreateDirectory(jobPath); } catch { }
+            try { Directory.CreateDirectory(AppSettings.JobWell); } catch { }
+
+            try
+            {
+                // Create and start the new poller (poller uses JobWell as its output)
+                _poller = new MyWpfApp.Model.PollAndArchive(inputPath, archivePath, AppSettings.JobWell);
+                _poller.StartWatching();
+                _currentPollerInputPath = inputPath;
+                _currentPollerArchivePath = archivePath;
+                _currentPollerJobPath = jobPath;
+                Debug.WriteLine($"PollAndArchive started for input: {inputPath}, archive: {archivePath}, jobDir: {jobPath}");
+            }
+            catch (Exception ex)
+            {
+                // If construction fails, clear poller state and notify user
+                try { _poller?.Dispose(); } catch { }
+                _poller = null;
+                _currentPollerInputPath = null;
+                _currentPollerArchivePath = null;
+                _currentPollerJobPath = null;
+                MessageBox.Show($"Failed to start PollAndArchive for '{inputPath}' -> '{archivePath}': {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void PrinterSelectSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //add code to handle printer selection changes
+            // If the selection becomes null (ie. printer removal), dropdown showsd placeholder text
+            if (PrinterSelect.SelectedItem == null)
+            {
+                PrinterSelect.Text = "Select Printer";
+            }
         }
 
         private void PrintJobManager_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -355,11 +745,8 @@ namespace MyWpfApp
                 return;
             }
 
-            // Refresh the PrinterViewModel instances used in the UI so the new printer appears.
-            var vm = new Printer.ViewModel.PrinterViewModel();
-            PrinterSelect.DataContext = vm;
-            PrintJobManager.DataContext = vm;
-            currentPrinterPickComboBox.DataContext = vm;
+            // Refresh PrinterViewModel instances in the UI so new printer appears
+            RefreshPrinterViewModels();
 
             // Optionally remove the added item from the dropdown or keep it
             //printerPickComboBox.Items.Refresh();
@@ -385,11 +772,10 @@ namespace MyWpfApp
                 MessageBox.Show($"Unable to remove printer: {ex.Message}", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            // Refresh the PrinterViewModel instances used in the UI so the removed printer disappears.
-            var vm = new Printer.ViewModel.PrinterViewModel();
-            PrinterSelect.DataContext = vm;
-            PrintJobManager.DataContext = vm;
-            currentPrinterPickComboBox.DataContext = vm;
+
+            // Refresh PrinterViewModel instances used in UI so removed printer disappears, clear the selection
+            RefreshPrinterViewModels();
+
             MessageBox.Show($"Printer '{printerName}' removed.", "Remove Printer", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -410,6 +796,20 @@ namespace MyWpfApp
 
             AppSettings.MaxPages = newMax;
             MessageBox.Show($"Max pages per split set to {newMax}.", "Settings updated", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Helper to replace the PrinterViewModel instances used by UI controls
+        private void RefreshPrinterViewModels()
+        {
+            var vm = new Printer.ViewModel.PrinterViewModel();
+            PrinterSelect.DataContext = vm;
+            PrintJobManager.DataContext = vm;
+            currentPrinterPickComboBox.DataContext = vm;
+
+            // Clear any currently selected item and set text to placeholder
+            // SelectedIndex = -1 guarantees no selection
+            PrinterSelect.SelectedIndex = -1;
+            PrinterSelect.Text = "Select Printer";
         }
     }
 }
