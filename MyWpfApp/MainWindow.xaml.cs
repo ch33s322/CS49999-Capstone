@@ -1,5 +1,6 @@
 ﻿using FileSystemItemModel.Model;
 using MyWpfApp.Model;
+using static MyWpfApp.Model.PdfUtil;
 using MyWpfApp.Utilities;
 using Printer.ViewModel;
 using System;
@@ -181,6 +182,7 @@ namespace MyWpfApp
                 {
                     case "View Job":
                         MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        OpenPdfWithDefaultViewer(jobContext.orgPdfName);
                         break;
                     case "Remove Job":
                         MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
@@ -279,6 +281,7 @@ namespace MyWpfApp
                                 MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
                                     $"with Parent Job '{parentJob.orgPdfName}'" +
                                     $"in Printer '{parentPrinter.Name}'");
+                                OpenPdfWithDefaultViewer(fileContext);
                                 break;
                             case "Move Job":
                                 MessageBox.Show($"File Context: Move requested for file '{fileContext}'" +
