@@ -181,7 +181,7 @@ namespace MyWpfApp
                 switch (header)
                 {
                     case "View Job":
-                        MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
+                        //MessageBox.Show($"Job Context: View requested for job '{jobContext.orgPdfName}'");
                         OpenPdfWithDefaultViewer(jobContext.orgPdfName);
                         break;
                     case "Remove Job":
@@ -278,9 +278,9 @@ namespace MyWpfApp
 
                                 break;
                             case "View Job":
-                                MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+                                //MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
+                                //    $"with Parent Job '{parentJob.orgPdfName}'" +
+                                //    $"in Printer '{parentPrinter.Name}'");
                                 OpenPdfWithDefaultViewer(fileContext);
                                 break;
                             case "Move Job":
@@ -289,15 +289,43 @@ namespace MyWpfApp
                                     $"in Printer '{parentPrinter.Name}'");
                                 break;
                             case "Remove Job":
-                                MessageBox.Show($"File Context: Remove requested for file '{fileContext}'" +
-                                    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                    $"in Printer '{parentPrinter.Name}'");
+                                // Confirm with the user
+                                var confirm = MessageBox.Show(
+                                    $"Are you sure you want to remove '{fileContext}' from job '{parentJob.orgPdfName}'?",
+                                    "Confirm Remove",
+                                    MessageBoxButton.YesNo,
+                                    MessageBoxImage.Question);
+
+                                if (confirm != MessageBoxResult.Yes)
+                                    break;
+
+                                try
+                                {
+                                    bool removed = _printManager.RemoveSplitFileFromJob(parentJob.jobId, fileContext);
+                                    if (removed)
+                                    {
+                                        // Refresh view-models so UI reflects the removed split file
+                                        RefreshPrinterViewModels();
+
+                                        MessageBox.Show($"Removed file '{fileContext}' from job '{parentJob.orgPdfName}'.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        try { ActivityLogger.LogAction("RemoveSplitFile", $"User removed '{fileContext}' from job {parentJob.jobId}"); } catch { }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show($"Failed to remove '{fileContext}'. It may not be part of the job or deletion failed.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"Error removing file '{fileContext}': {ex.Message}", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                }
+
                                 break;
                         }
                     }
                     else
                     {
-                        MessageBox.Show($"Parent job not found for file '{fileContext}'.");
+                        //MessageBox.Show($"Parent job not found for file '{fileContext.'}");
                     }
                 }
             }

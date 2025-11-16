@@ -121,6 +121,58 @@ namespace MyWpfApp.Model
             }
         }
 
+        // Remove a single split PDF file from a job and delete the file from disk.
+        // This deletes only the selected split PDF, not other files belonging to the job.
+        public bool RemoveSplitFileFromJob(Guid jobId, string splitPdfName)
+        {
+            if (string.IsNullOrWhiteSpace(splitPdfName)) throw new ArgumentException(nameof(splitPdfName));
+
+            lock (_lock)
+            {
+                var job = _printers.SelectMany(p => p.Jobs).FirstOrDefault(j => j.jobId == jobId);
+                if (job == null) throw new KeyNotFoundException("Job not found");
+
+                // find the filename in the job (case-insensitive)
+                var matched = job.fileNames.FirstOrDefault(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase));
+                if (matched == null)
+                {
+                    // file not part of this job
+                    return false;
+                }
+
+                // build absolute path and ensure it's inside AppSettings.JobDir
+                var jobDirFull = Path.GetFullPath(AppSettings.JobDir);
+                var fullPath = Path.GetFullPath(Path.Combine(AppSettings.JobDir, matched));
+                if (!fullPath.StartsWith(jobDirFull, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Cannot delete files outside the JobDir directory.");
+
+                bool deletedOnDisk = false;
+                if (File.Exists(fullPath))
+                {
+                    try
+                    {
+                        File.Delete(fullPath);
+                        deletedOnDisk = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        // log and abort the removal so we don't get out-of-sync state
+                        try { ActivityLogger.LogAction("RemoveSplitFileError", $"Failed to delete '{fullPath}': {ex.Message}"); } catch { }
+                        return false;
+                    }
+                }
+                // If file doesn't exist on disk, we still remove the reference from the job to keep store consistent.
+
+                // remove the filename from the job's list
+                job.fileNames.RemoveAll(f => string.Equals(f, matched, StringComparison.OrdinalIgnoreCase));
+                SavePrinterStore();
+
+                try { ActivityLogger.LogAction("RemoveSplitFile", $"Job {jobId}: Removed file '{matched}' (deleted:{deletedOnDisk})"); } catch { }
+
+                return true;
+            }
+        }
+
         // sets a job to a printer (moves job object between Printer.Jobs lists)
         public void SetJobPrinter(Guid jobId, string printerName)
         {
