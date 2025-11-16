@@ -22,15 +22,13 @@ namespace MyWpfApp.Model
     public class PrintManager
     {
         private readonly object _lock = new object();
-
-        // In-memory store of Printer objects (each Printer has a List<Job> Jobs)
         private List<PrinterClass> _printers = new List<PrinterClass>();
 
-        // name used for unassigned jobs
         private const string UnassignedPrinterName = "";
-
-        // default Adobe path now set to Acrobat.exe; callers can still override
         public string AdobeReaderPath { get; set; } = @"C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe";
+
+        // Raised after any change to jobs (add/remove/move or split file deletion).
+        public event EventHandler JobsChanged;
 
         public PrintManager()
         {
@@ -38,7 +36,6 @@ namespace MyWpfApp.Model
             LoadPrinterStore();
             EnsureUnassignedPrinterExists();
 
-            // Only override default if a registry-detected path is available
             var detected = GetAdobeReaderPath();
             if (!string.IsNullOrWhiteSpace(detected))
             {
@@ -46,6 +43,7 @@ namespace MyWpfApp.Model
             }
         }
 
+        // Ensure that the unassigned printer entry always exists
         private void EnsureUnassignedPrinterExists()
         {
             lock (_lock)
@@ -55,12 +53,40 @@ namespace MyWpfApp.Model
                     var unassigned = new PrinterClass { Name = UnassignedPrinterName, Status = "Unassigned" };
                     _printers.Add(unassigned);
                     SavePrinterStore();
+                    RaiseJobsChanged();
                 }
             }
         }
 
+        // Raise the JobsChanged event, marshaling to the UI thread if necessary
+        private void RaiseJobsChanged()
+        {
+            // Marshal to UI thread
+            var handler = JobsChanged;
+            if (handler == null) return;
 
-        // queues a job 
+            try
+            {
+                var app = Application.Current;
+                if (app != null && app.Dispatcher != null && !app.Dispatcher.CheckAccess())
+                {
+                    app.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        try { handler(this, EventArgs.Empty); } catch { }
+                    }));
+                }
+                else
+                {
+                    handler(this, EventArgs.Empty);
+                }
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"Exception when invoking handler for change in jobs: {ex}");
+            }
+        }
+
+        // Queue a new job for printing, check for duplicates
         public void QueueJob(Job job)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
@@ -72,19 +98,18 @@ namespace MyWpfApp.Model
 
                 if (target == null)
                 {
-                    // create printer entry if not present
                     target = new PrinterClass { Name = targetName, Status = "Unknown" };
                     _printers.Add(target);
                 }
 
                 var existingJob = _printers.SelectMany(p => p.Jobs).FirstOrDefault(j => j.orgPdfName == job.orgPdfName);
 
-                // avoid duplicate jobs
                 if (existingJob == null)
                 {
-                    job.printerName = target.Name; // keep job consistent
+                    job.printerName = target.Name;
                     target.Jobs.Add(job);
                     SavePrinterStore();
+                    RaiseJobsChanged();
                 }
                 else
                 {
@@ -93,7 +118,7 @@ namespace MyWpfApp.Model
             }
         }
 
-        // release job
+        // Remove (delete) a job by its jobId
         public void ReleaseJob(Guid jobId)
         {
             lock (_lock)
@@ -105,11 +130,14 @@ namespace MyWpfApp.Model
                     if (existed) changed = true;
                 }
 
-                if (changed) SavePrinterStore();
+                if (changed)
+                {
+                    SavePrinterStore();
+                    RaiseJobsChanged();
+                }
             }
         }
 
-        // set job to simplex/duplex
         public void SetJobSimplexFlag(Guid jobId, bool flag)
         {
             lock (_lock)
@@ -118,29 +146,38 @@ namespace MyWpfApp.Model
                 if (job == null) throw new KeyNotFoundException("Job not found");
                 job.Simplex = flag;
                 SavePrinterStore();
+                RaiseJobsChanged();
             }
         }
 
-        // Remove a single split PDF file from a job and delete the file from disk.
-        // This deletes only the selected split PDF, not other files belonging to the job.
+        // Remove a single split PDF, deleting parent job if it becomes empty
         public bool RemoveSplitFileFromJob(Guid jobId, string splitPdfName)
         {
             if (string.IsNullOrWhiteSpace(splitPdfName)) throw new ArgumentException(nameof(splitPdfName));
 
+            bool changed = false;
+
             lock (_lock)
             {
-                var job = _printers.SelectMany(p => p.Jobs).FirstOrDefault(j => j.jobId == jobId);
+                PrinterClass owningPrinter = null;
+                Job job = null;
+                foreach (var p in _printers)
+                {
+                    job = p.Jobs.FirstOrDefault(j => j.jobId == jobId);
+                    if (job != null)
+                    {
+                        owningPrinter = p;
+                        break;
+                    }
+                }
                 if (job == null) throw new KeyNotFoundException("Job not found");
 
-                // find the filename in the job (case-insensitive)
                 var matched = job.fileNames.FirstOrDefault(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase));
                 if (matched == null)
                 {
-                    // file not part of this job
                     return false;
                 }
 
-                // build absolute path and ensure it's inside AppSettings.JobDir
                 var jobDirFull = Path.GetFullPath(AppSettings.JobDir);
                 var fullPath = Path.GetFullPath(Path.Combine(AppSettings.JobDir, matched));
                 if (!fullPath.StartsWith(jobDirFull, StringComparison.OrdinalIgnoreCase))
@@ -156,31 +193,42 @@ namespace MyWpfApp.Model
                     }
                     catch (Exception ex)
                     {
-                        // log and abort the removal so we don't get out-of-sync state
                         try { ActivityLogger.LogAction("RemoveSplitFileError", $"Failed to delete '{fullPath}': {ex.Message}"); } catch { }
                         return false;
                     }
                 }
-                // If file doesn't exist on disk, we still remove the reference from the job to keep store consistent.
 
-                // remove the filename from the job's list
                 job.fileNames.RemoveAll(f => string.Equals(f, matched, StringComparison.OrdinalIgnoreCase));
+                changed = true;
+
+                bool jobDeleted = false;
+                if (job.fileNames.Count == 0 && owningPrinter != null)
+                {
+                    owningPrinter.Jobs.RemoveAll(j => j.jobId == job.jobId);
+                    jobDeleted = true;
+                }
+
                 SavePrinterStore();
 
-                try { ActivityLogger.LogAction("RemoveSplitFile", $"Job {jobId}: Removed file '{matched}' (deleted:{deletedOnDisk})"); } catch { }
-
-                return true;
+                try
+                {
+                    ActivityLogger.LogAction("RemoveSplitFile",
+                        $"Job {jobId}: Removed file '{matched}' (deletedOnDisk:{deletedOnDisk}) (jobDeleted:{jobDeleted})");
+                }
+                catch { }
             }
+
+            if (changed) RaiseJobsChanged();
+            return true;
         }
 
-        // sets a job to a printer (moves job object between Printer.Jobs lists)
+        // Set the printer for a job, used when moving job to new printer
         public void SetJobPrinter(Guid jobId, string printerName)
         {
             if (printerName == null) throw new ArgumentNullException(nameof(printerName));
 
             lock (_lock)
             {
-                    // find and remove job from current printer (if any)
                 Job job = null;
                 foreach (var p in _printers)
                 {
@@ -193,10 +241,8 @@ namespace MyWpfApp.Model
                     }
                 }
 
-                // if job was not found, we cannot move it — caller should QueueJob first
                 if (job == null) throw new KeyNotFoundException("Job not found; queue the job before assigning");
 
-                // determine target printer
                 var targetName = string.IsNullOrWhiteSpace(printerName) ? UnassignedPrinterName : printerName;
                 var target = _printers.FirstOrDefault(p => string.Equals(p.Name, targetName, StringComparison.OrdinalIgnoreCase));
                 if (target == null)
@@ -210,20 +256,20 @@ namespace MyWpfApp.Model
 
                 SavePrinterStore();
             }
+
+            RaiseJobsChanged();
         }
 
-        // adds printer to printer set (and persists the Printer including its Jobs list)
+        // Add a new printer to the application
         public bool AddPrinter(string PrinterName)
         {
             if (string.IsNullOrWhiteSpace(PrinterName)) throw new ArgumentException(nameof(PrinterName));
 
-            // ensure directory exists
             if (!Directory.Exists(AppSettings.PrinterDir))
             {
                 Directory.CreateDirectory(AppSettings.PrinterDir);
             }
 
-            // create printer directory if missing 
             string printerPath = Path.Combine(AppSettings.PrinterDir, PrinterName);
             if (!Directory.Exists(printerPath))
             {
@@ -237,17 +283,9 @@ namespace MyWpfApp.Model
                     var newPrinter = new PrinterClass { Name = PrinterName, Status = "Unknown" };
                     _printers.Add(newPrinter);
                     SavePrinterStore();
+                    RaiseJobsChanged();
 
-                    // Log addition
-                    try
-                    {
-                        ActivityLogger.LogAction("AddPrinter", $"Printer '{PrinterName}' added");
-                    }
-                    catch
-                    {
-                        // do not let logging break operation
-                    }
-
+                    try { ActivityLogger.LogAction("AddPrinter", $"Printer '{PrinterName}' added"); } catch { }
                     return true;
                 }
             }
@@ -255,10 +293,11 @@ namespace MyWpfApp.Model
             return false;
         }
 
-        // removes printer and moves its jobs to the unassigned printer
+        // Remove an existing printer, moving its jobs to unassigned
         public PrinterClass RemovePrinter(string printerName)
         {
             if (string.IsNullOrWhiteSpace(printerName)) throw new ArgumentException(nameof(printerName));
+            PrinterClass removed = null;
 
             lock (_lock)
             {
@@ -272,7 +311,6 @@ namespace MyWpfApp.Model
                     _printers.Add(unassigned);
                 }
 
-                // move jobs
                 int movedCount = 0;
                 foreach (var j in entry.Jobs)
                 {
@@ -285,34 +323,23 @@ namespace MyWpfApp.Model
                 }
 
                 _printers.Remove(entry);
+                removed = entry;
                 SavePrinterStore();
 
-                // remove directory if exists
                 try
                 {
                     string printerPath = Path.Combine(AppSettings.PrinterDir, printerName);
                     if (Directory.Exists(printerPath)) Directory.Delete(printerPath, true);
                 }
-                catch
-                {
-                    // ignore IO errors
-                }
+                catch { }
 
-                // Log removal
-                try
-                {
-                    ActivityLogger.LogAction("RemovePrinter", $"Printer '{printerName}' removed; {movedCount} job(s) moved to unassigned");
-                }
-                catch
-                {
-                    // do not let logging break operation
-                }
-
-                return entry;
+                try { ActivityLogger.LogAction("RemovePrinter", $"Printer '{printerName}' removed; {movedCount} job(s) moved to unassigned"); } catch { }
             }
+
+            if (removed != null) RaiseJobsChanged();
+            return removed;
         }
 
-        // used to get all jobs (flattened)
         public List<Job> GetJobs()
         {
             lock (_lock)
@@ -321,7 +348,6 @@ namespace MyWpfApp.Model
             }
         }
 
-        // get jobs for a printer, returns unsorted list of jobs for printer
         public List<Job> GetJobsForPrinter(string printer)
         {
             lock (_lock)
@@ -333,7 +359,6 @@ namespace MyWpfApp.Model
             }
         }
 
-        // get all printers
         public List<string> getAllPrinters()
         {
             lock (_lock)
@@ -342,8 +367,6 @@ namespace MyWpfApp.Model
             }
         }
 
-        // --- Persistence DTO & helpers ---
-        // Persist a lightweight DTO (so we don't try to serialize events / bindings)
         [DataContract]
         private class PersistedPrinterDto
         {
@@ -372,7 +395,6 @@ namespace MyWpfApp.Model
                         var ser = new DataContractJsonSerializer(typeof(List<PersistedPrinterDto>));
                         var dtoList = ser.ReadObject(fs) as List<PersistedPrinterDto> ?? new List<PersistedPrinterDto>();
 
-                        // convert DTOs to PrinterClass instances
                         _printers = dtoList.Select(d =>
                         {
                             var p = new PrinterClass
@@ -412,32 +434,28 @@ namespace MyWpfApp.Model
                         ser.WriteObject(fs, dtoList);
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
-                    // swallow IO errors; consider logging in real app
+                    Debug.WriteLine($"Exception when saving printer store: {ex}");
                 }
             }
         }
 
+        // Attempt to locate Adobe Reader installation via registry
         private string GetAdobeReaderPath()
         {
-            // Attempt to find Adobe Reader executable path from registry
             try
             {
-                // Check 32-bit registry view
                 using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
                 {
                     if (key != null)
                     {
                         var path = key.GetValue("") as string;
                         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                        {
                             return path;
-                        }
                     }
                 }
 
-                // Check 64-bit registry view
                 using (var key = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64)
                     .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
                 {
@@ -445,47 +463,37 @@ namespace MyWpfApp.Model
                     {
                         var path = key.GetValue("") as string;
                         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                        {
                             return path;
-                        }
                     }
                 }
 
-                // Check WOW6432Node for 32-bit Adobe Reader on 64-bit Windows
                 using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\AcroRd32.exe"))
                 {
                     if (key != null)
                     {
                         var path = key.GetValue("") as string;
                         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                        {
                             return path;
-                        }
                     }
                 }
 
-                // check path for full Acrobat if reader not found
                 using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Acrobat.exe"))
                 {
                     if (key != null)
                     {
                         var path = key.GetValue("") as string;
                         if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                        {
                             return path;
-                        }
                     }
                 }
             }
-            catch
+            catch(Exception ex)
             {
-                // ignore registry access errors
+                Debug.WriteLine($"Exception when attempting to locate Adobe Reader path via registry: {ex}");
             }
 
             return null;
         }
-
-        // -- Printing --
 
         public bool PrintJob(string pdfName, string printerName)
         {
@@ -498,13 +506,13 @@ namespace MyWpfApp.Model
 
             string arguments = $"/t \"{inputPdfPath}\" \"{printerName}\"";
 
-            var psi = new System.Diagnostics.ProcessStartInfo
+            var psi = new ProcessStartInfo
             {
                 FileName = AdobeReaderPath,
                 Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = Path.GetDirectoryName(AdobeReaderPath) ?? Environment.CurrentDirectory
             };
 
@@ -518,24 +526,22 @@ namespace MyWpfApp.Model
             }
             catch (Exception ex)
             {
-                // Surface PDF reader errors immediately with context
                 var msg = $"Failed to open PDF '{inputPdfPath}' before printing: {ex.Message}";
                 throw new InvalidOperationException(msg, ex);
             }
 
             Debug.WriteLine("starting process for print");
-            System.Diagnostics.Process proc = null;
+            Process proc = null;
             try
             {
                 try
                 {
-                    proc = System.Diagnostics.Process.Start(psi);
+                    proc = Process.Start(psi);
                     if (proc == null)
                         throw new InvalidOperationException("Failed to start Adobe Reader process (Process.Start returned null).");
                 }
                 catch (Exception startEx)
                 {
-                    // Build richer diagnostic message to help identify why Process.Start failed
                     var diagnostics = new StringBuilder();
                     diagnostics.AppendLine("Failed to start Adobe Reader process.");
                     diagnostics.AppendLine($"FileName: {psi.FileName}");
@@ -554,10 +560,10 @@ namespace MyWpfApp.Model
                     try { ActivityLogger.LogAction("PrintProcessStartError", diagMsg); } catch { }
                     Debug.WriteLine(diagMsg);
 
-                    // Re-throw a wrapped exception with the diagnostics as the message
                     throw new InvalidOperationException("Failed to start Adobe Reader process. See InnerException and Debug output for details.", startEx);
                 }
 
+                // Hard timeout of 30 minutes for print job to complete
                 TimeSpan timeoutMs = TimeSpan.FromMinutes(30);
 
                 bool completed;
@@ -573,32 +579,62 @@ namespace MyWpfApp.Model
 
                 if (!completed)
                 {
-                    try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
+                    try { if (proc != null && !proc.HasExited) proc.Kill(); } catch(Exception ex) { Debug.WriteLine($"Exception when printing: {ex}"); }
                     return false;
                 }
 
                 try
                 {
-                    if (proc.HasExited)
-                    {
-                        if (proc.ExitCode != 0)
-                            throw new InvalidOperationException($"Adobe Reader exited with code {proc.ExitCode} when printing.");
-                    }
+                    if (proc.HasExited && proc.ExitCode != 0)
+                        throw new InvalidOperationException($"Adobe Reader exited with code {proc.ExitCode} when printing.");
                 }
-                catch (InvalidOperationException)
-                {
-                    throw;
-                }
+                catch (InvalidOperationException) { throw; }
                 catch (Exception ex)
                 {
                     throw new InvalidOperationException("Failed to verify Adobe Reader process state.", ex);
+                }
+
+                // Successful print: delete the split PDF and possibly the empty job.
+                try
+                {
+                    Guid foundJobId;
+                    if (TryFindJobIdBySplitFile(pdfName, out foundJobId))
+                    {
+                        var removed = RemoveSplitFileFromJob(foundJobId, pdfName);
+                        try
+                        {
+                            ActivityLogger.LogAction("AutoDeleteSplitAfterPrint",
+                                $"Printed and removed '{pdfName}' from job {foundJobId} (removed:{removed})");
+                        }
+                        catch(Exception ex)
+                        {
+                            Debug.WriteLine($"Exception when looking for job by split PDF file: {ex}");
+                        }
+                    }
+                    else
+                    {
+                        TryDeleteSplitFileFromDisk(pdfName);
+                        try
+                        {
+                            ActivityLogger.LogAction("AutoDeleteSplitAfterPrintOrphan",
+                                $"Printed and deleted untracked split '{pdfName}'");
+                        }
+                        catch(Exception ex)
+                        {
+                            Debug.WriteLine($"Exception when trying to automatically delete split PDF after printing: {ex}");
+                        }
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Debug.WriteLine($"Exception when attempting to delete after printing: {ex}");
                 }
 
                 return true;
             }
             finally
             {
-                try { if (proc != null && !proc.HasExited) proc.Kill(); } catch { }
+                try { if (proc != null && !proc.HasExited) proc.Kill(); } catch(Exception ex) { Debug.WriteLine($"Exception when printing: {ex}"); }
             }
         }
 
@@ -612,7 +648,7 @@ namespace MyWpfApp.Model
             }
             catch
             {
-                return false; // printer not available
+                return false;
             }
 
             var sw = Stopwatch.StartNew();
@@ -625,7 +661,6 @@ namespace MyWpfApp.Model
                     queue.Refresh();
                     var jobs = queue.GetPrintJobInfoCollection().Cast<PrintSystemJobInfo>().ToList();
 
-                    // try to find the job by name first, then fallback to submitter + time heuristics
                     var job = jobs.FirstOrDefault(j => string.Equals(j.Name, documentName, StringComparison.OrdinalIgnoreCase))
                               ?? jobs.FirstOrDefault(j => j.Submitter == Environment.UserName && (observedJobId == null || j.JobIdentifier == observedJobId));
 
@@ -633,48 +668,39 @@ namespace MyWpfApp.Model
                     {
                         observedJobId = job.JobIdentifier;
 
-                        // job still in spooler; finish when pages reach pagesToPrint
-                        //if (job.NumberOfPages >= pagesToPrint) return true;
                         if (!job.JobStatus.HasFlag(PrintJobStatus.Spooling) && job.NumberOfPages >= pagesToPrint) return true;
-
-                        // job finished successfully (removed from spooler) or reported completed
                         if (job.IsCompleted || job.IsDeleted) return true;
 
-                        // Some environments set JobStatus flags; check for error states
                         if (job.JobStatus.HasFlag(PrintJobStatus.Error) || job.JobStatus.HasFlag(PrintJobStatus.Offline))
                             throw new InvalidOperationException($"Print job in error state: {job.JobStatus}");
 
-                        // number of pages may be available as an indicator
                         if (job.NumberOfPages > 0 && job.IsCompleted) return true;
                     }
                     else
                     {
-                        // if we previously saw a job but now it is gone, assume completion
                         if (observedJobId != null) return true;
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
-                    // transient spooler errors — retry until timeout
+                    Debug.WriteLine($"Exception when waiting for job completion: {ex}");
                 }
 
                 Thread.Sleep(500);
             }
 
-            return false; // timed out
+            return false;
         }
 
-        // Move a single split PDF from one job to another printer.
-        // If the target printer already has a job from the same original PDF, the file is appended to that job.
-        // Otherwise, a new job containing only this split file is created on the target printer.
         public bool MoveSplitFileToPrinter(Guid sourceJobId, string splitPdfName, string targetPrinterName)
         {
             if (string.IsNullOrWhiteSpace(splitPdfName)) throw new ArgumentException(nameof(splitPdfName));
             if (targetPrinterName == null) throw new ArgumentNullException(nameof(targetPrinterName));
 
+            bool changed = false;
+
             lock (_lock)
             {
-                // locate source job and printer
                 PrinterClass sourcePrinter = null;
                 Job sourceJob = null;
                 foreach (var p in _printers)
@@ -689,18 +715,13 @@ namespace MyWpfApp.Model
                 }
                 if (sourceJob == null) throw new KeyNotFoundException("Source job not found.");
 
-                // ensure the split file belongs to the source job
                 var idx = sourceJob.fileNames.FindIndex(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase));
-                if (idx < 0) return false; // nothing to move
+                if (idx < 0) return false;
 
-                // normalize target printer
                 var targetName = targetPrinterName.Trim();
-
-                // if target equals current, nothing to do
                 if (string.Equals(sourceJob.printerName ?? string.Empty, targetName, StringComparison.OrdinalIgnoreCase))
                     return false;
 
-                // find or create target printer entry
                 var targetPrinter = _printers.FirstOrDefault(p => string.Equals(p.Name ?? string.Empty, targetName, StringComparison.OrdinalIgnoreCase));
                 if (targetPrinter == null)
                 {
@@ -708,43 +729,79 @@ namespace MyWpfApp.Model
                     _printers.Add(targetPrinter);
                 }
 
-                // find an existing job for the same original PDF on the target printer (to aggregate)
                 var targetJob = targetPrinter.Jobs.FirstOrDefault(j =>
                     string.Equals(j.orgPdfName ?? string.Empty, sourceJob.orgPdfName ?? string.Empty, StringComparison.OrdinalIgnoreCase));
 
                 if (targetJob == null)
                 {
-                    // create a new job containing only this split file
                     targetJob = new Job(targetPrinter.Name, new List<string> { splitPdfName }, sourceJob.Simplex, sourceJob.orgPdfName)
                     {
-                        // jobId defaults to new Guid
                         dateTime = DateTime.Now
                     };
                     targetPrinter.Jobs.Add(targetJob);
                 }
-                else
+                else if (!targetJob.fileNames.Any(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    // append file if not already present
-                    if (!targetJob.fileNames.Any(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        targetJob.fileNames.Add(splitPdfName);
-                    }
+                    targetJob.fileNames.Add(splitPdfName);
                 }
 
-                // remove the file from the source job
                 sourceJob.fileNames.RemoveAt(idx);
 
-                // remove the empty job from its printer if it no longer holds any files
                 if (sourceJob.fileNames.Count == 0 && sourcePrinter != null)
                 {
                     sourcePrinter.Jobs.RemoveAll(j => j.jobId == sourceJob.jobId);
                 }
 
                 SavePrinterStore();
+                changed = true;
 
                 try { ActivityLogger.LogAction("MoveSplitFile", $"Moved '{splitPdfName}' from job {sourceJobId} to printer '{targetPrinter.Name}'"); } catch { }
+            }
 
-                return true;
+            if (changed) RaiseJobsChanged();
+            return true;
+        }
+
+        private bool TryFindJobIdBySplitFile(string splitPdfName, out Guid jobId)
+        {
+            jobId = Guid.Empty;
+            if (string.IsNullOrWhiteSpace(splitPdfName)) return false;
+
+            lock (_lock)
+            {
+                var job = _printers
+                    .SelectMany(p => p.Jobs)
+                    .FirstOrDefault(j => j.fileNames != null && j.fileNames.Any(f => string.Equals(f, splitPdfName, StringComparison.OrdinalIgnoreCase)));
+
+                if (job != null)
+                {
+                    jobId = job.jobId;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void TryDeleteSplitFileFromDisk(string splitPdfName)
+        {
+            if (string.IsNullOrWhiteSpace(splitPdfName)) return;
+
+            var jobDirFull = Path.GetFullPath(AppSettings.JobDir);
+            var fullPath = Path.GetFullPath(Path.Combine(AppSettings.JobDir, splitPdfName));
+
+            if (!fullPath.StartsWith(jobDirFull, StringComparison.OrdinalIgnoreCase)) return;
+
+            if (File.Exists(fullPath))
+            {
+                try
+                {
+                    File.Delete(fullPath);
+                }
+                catch (Exception ex)
+                {
+                    try { ActivityLogger.LogAction("AutoDeleteSplitAfterPrintError", $"Failed to delete '{fullPath}': {ex.Message}"); } catch { }
+                }
             }
         }
     }

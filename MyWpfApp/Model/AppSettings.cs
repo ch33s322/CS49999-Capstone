@@ -1,12 +1,14 @@
-﻿using System;
+﻿using MyWpfApp.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.Remoting.Contexts;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
-using MyWpfApp.Utilities;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MyWpfApp.Model
 {
@@ -14,7 +16,6 @@ namespace MyWpfApp.Model
     {
         private static readonly string ExeFolder = AppDomain.CurrentDomain.BaseDirectory;
 
-        /*Default folder paths*/
         // Backing field for InputDir (can be overridden by persisted settings)
         private static string _inputDir = Path.Combine(ExeFolder, "InputDir");
         // folder path to input pdfs
@@ -36,17 +37,17 @@ namespace MyWpfApp.Model
                             // Ensure directory exists for the new input dir
                             Directory.CreateDirectory(_inputDir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow - creation may fail due to permissions; let caller handle if needed
+                            Debug.WriteLine($"Exception when creating input directory: {ex}");
                         }
                         try
                         {
                             SaveSettings();
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow to avoid crashing app on save failure
+                            Debug.WriteLine($"Exception when saving input directory settings: {ex}");
                         }
 
                         // Log the change (non-blocking and swallow errors inside logger)
@@ -54,9 +55,9 @@ namespace MyWpfApp.Model
                         {
                             ActivityLogger.LogChange("InputDir", old, _inputDir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow any unexpected logger exception
+                            Debug.WriteLine($"Exception when logging directory change: {ex}");
                         }
                     }
                 }
@@ -83,17 +84,17 @@ namespace MyWpfApp.Model
                         {
                             Directory.CreateDirectory(_archive_dir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow - creation may fail due to permissions; let caller handle if needed
+                            Debug.WriteLine($"Exception when creating archive directory: {ex}");
                         }
                         try
                         {
                             SaveSettings();
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow
+                            Debug.WriteLine($"Exception when saving archive directory: {ex}");
                         }
 
                         // Log the change
@@ -101,9 +102,9 @@ namespace MyWpfApp.Model
                         {
                             ActivityLogger.LogChange("ArchiveDir", old, _archive_dir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow
+                            Debug.WriteLine($"Exception when logging change of archive directory: {ex}");
                         }
                     }
                 }
@@ -130,17 +131,17 @@ namespace MyWpfApp.Model
                         {
                             Directory.CreateDirectory(_jobDir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow - creation may fail due to permissions; let caller handle if needed
+                            Debug.WriteLine($"Exception when creating directory: {ex}");
                         }
                         try
                         {
                             SaveSettings();
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow
+                            Debug.WriteLine($"Exception when saving directory settings: {ex}");
                         }
 
                         // Log the change
@@ -148,18 +149,18 @@ namespace MyWpfApp.Model
                         {
                             ActivityLogger.LogChange("JobDir", old, _jobDir);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow
+                            Debug.WriteLine($"Exception when logging directory change: {ex}");
                         }
                     }
                 }
             }
         }
 
-        // Backing field for AdobePath (can be overridden by persisted settings). Empty means unset.
+        // Backing field for AdobePath (overridden by persisted settings)
         private static string _adobePath = string.Empty;
-        // Path to Adobe Reader (or other PDF reader) executable or folder. Empty allowed.
+        // Path to Adobe Reader executable or folder
         public static string AdobePath
         {
             get { return _adobePath; }
@@ -181,9 +182,9 @@ namespace MyWpfApp.Model
                             normalized = resolvedExe;
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // resolution failure should not prevent storing normalized value
+                        Debug.WriteLine($"Exception when resolving AdobePath: {ex}");
                     }
                 }
 
@@ -197,27 +198,27 @@ namespace MyWpfApp.Model
                         {
                             SaveSettings();
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow to avoid crashing app on save failure
+                            Debug.WriteLine($"Exception when saving AdobePath settings: {ex}");
                         }
 
-                        // Log the change (allow empty new value)
+                        // Log the change
                         try
                         {
                             ActivityLogger.LogChange("AdobePath", old, _adobePath);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow
+                            Debug.WriteLine($"Exception when logging AdobePath change: {ex}");
                         }
                     }
                 }
             }
         }
 
-        // Attempt to resolve given path into an Adobe executable full path.
-        // Accepts either a direct exe path, a directory containing a known exe, or a path that can be combined with common exe names.
+        // Attempt to resolve given path into an Adobe executable full path
+        // Accepts: direct EXE path, directory containing a known EXE, path combined with known Adobe EXE names
         private static string ResolveAdobeExecutablePath(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return null;
@@ -226,7 +227,7 @@ namespace MyWpfApp.Model
                 // If it's already an existing file, accept it
                 if (File.Exists(path)) return Path.GetFullPath(path);
 
-                // If it's a directory, search for common adobe exe names
+                // If it's a directory, search for common Adobe EXE names
                 if (Directory.Exists(path))
                 {
                     var candidates = new[] { "AcroRd32.exe", "AcroRd64.exe", "Acrobat.exe" };
@@ -246,12 +247,15 @@ namespace MyWpfApp.Model
                         var combined = Path.Combine(path, c);
                         if (File.Exists(combined)) return Path.GetFullPath(combined);
                     }
-                    catch { }
+                    catch(Exception ex)
+                    {
+                        Debug.WriteLine($"Exception when getting full Adobe EXE path: {ex}");
+                    }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // swallow resolution errors
+                Debug.WriteLine($"Exception when resolving Adobe path: {ex}");
             }
             return null;
         }
@@ -287,18 +291,19 @@ namespace MyWpfApp.Model
                         {
                             SaveSettings();
                         }
-                        catch
+                        catch(Exception ex)
                         {
+                            Debug.WriteLine($"Exception when saving new maxPages value: {ex}");
                         }
 
-                        // Log the change (non-blocking and swallow errors inside logger)
+                        // Log the change
                         try
                         {
                             ActivityLogger.LogChange("MaxPages", old, value);
                         }
-                        catch
+                        catch(Exception ex)
                         {
-                            // swallow any unexpected logger exception
+                            Debug.WriteLine($"Exception when logging maxPages change: {ex}");
                         }
                     }
                 }
@@ -358,9 +363,9 @@ namespace MyWpfApp.Model
                             {
                                 _inputDir = NormalizePath(dto.InputDir);
                             }
-                            catch
+                            catch(Exception ex)
                             {
-                                // ignore malformed persisted path and keep default
+                                Debug.WriteLine($"Exception when loading settings (InputDir): {ex}");
                             }
                         }
                         if (!string.IsNullOrWhiteSpace(dto.ArchiveDir))
@@ -369,9 +374,9 @@ namespace MyWpfApp.Model
                             {
                                 _archive_dir = NormalizePath(dto.ArchiveDir);
                             }
-                            catch
+                            catch(Exception ex)
                             {
-                                // ignore malformed persisted path and keep default
+                                Debug.WriteLine($"Exception when loading settings (ArchiveDir): {ex}");
                             }
                         }
                         if (!string.IsNullOrWhiteSpace(dto.JobDir))
@@ -380,9 +385,9 @@ namespace MyWpfApp.Model
                             {
                                 _jobDir = NormalizePath(dto.JobDir);
                             }
-                            catch
+                            catch(Exception ex)
                             {
-                                // ignore malformed persisted path and keep default
+                                Debug.WriteLine($"Exception when loading settings (JobDir): {ex}");
                             }
                         }
                         // AdobePath may be empty; allow empty string
@@ -444,15 +449,15 @@ namespace MyWpfApp.Model
             }
             catch
             {
-                // Fallback: try to copy/overwrite
+                // Fallback, try to copy/overwrite
                 try
                 {
                     File.Copy(temp, SettingsFile, overwrite: true);
                     File.Delete(temp);
                 }
-                catch
+                catch(Exception ex)
                 {
-                    // If persistence fails, swallow to avoid crashing the app.
+                    Debug.WriteLine($"Exception when attempting to persist settings: {ex}");
                 }
             }
         }
@@ -463,7 +468,7 @@ namespace MyWpfApp.Model
         private static string _job_dir_for_serialization() { return _jobDir; }
         private static string _adobe_path_for_serialization() { return _adobePath; }
 
-        // Normalize user supplied path: if relative, treat as relative to exe folder, then return full path
+        // Normalize user supplied path
         private static string NormalizePath(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("Path cannot be null or whitespace", nameof(path));
@@ -480,11 +485,11 @@ namespace MyWpfApp.Model
         //call to ensure all directories exist
         public static void EnsureDirectoriesExist()
         {
-            try { Directory.CreateDirectory(InputDir); } catch { }
-            try { Directory.CreateDirectory(JobWell); } catch { }
-            try { Directory.CreateDirectory(ArchiveDir); } catch { }
-            try { Directory.CreateDirectory(JobDir); } catch { }
-            try { Directory.CreateDirectory(PrinterDir); } catch { }
+            try { Directory.CreateDirectory(InputDir); } catch(Exception ex) { Debug.WriteLine($"Exception when checking directory: {ex}"); }
+            try { Directory.CreateDirectory(JobWell); } catch (Exception ex) { Debug.WriteLine($"Exception when checking directory: {ex}"); }
+            try { Directory.CreateDirectory(ArchiveDir); } catch (Exception ex) { Debug.WriteLine($"Exception when checking directory: {ex}"); }
+            try { Directory.CreateDirectory(JobDir); } catch (Exception ex) { Debug.WriteLine($"Exception when checking directory: {ex}"); }
+            try { Directory.CreateDirectory(PrinterDir); } catch (Exception ex) { Debug.WriteLine($"Exception when checking directory: {ex}"); }
         }
     }
 }

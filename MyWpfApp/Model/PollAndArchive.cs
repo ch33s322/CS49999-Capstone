@@ -35,8 +35,6 @@ namespace MyWpfApp.Model
             _watcher.Created += OnPdfCreated;
         }
 
-        // These are necessary for now since maxPages and the temp outputDirectory aren't global values
-        // Once we have these configurable as settings we can remove these variables
         public void StartWatching()
         {
             _watcher.EnableRaisingEvents = true;

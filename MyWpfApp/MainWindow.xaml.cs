@@ -42,6 +42,7 @@ namespace MyWpfApp
         {
             InitializeComponent();
             _printManager = new PrintManager();
+            _printManager.JobsChanged += PrintManager_JobsChanged;
 
             // If an Adobe path was previously saved, ensure the PrintManager knows about it
             try
@@ -152,6 +153,17 @@ namespace MyWpfApp
                 // ignore startup errors
             }
         }
+        private void PrintManager_JobsChanged(object sender, EventArgs e)
+        {
+            RefreshPrinterViewModels(); // reuse existing method to rebuild view-models
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _printManager.JobsChanged -= PrintManager_JobsChanged;
+            try { _poller?.Dispose(); } catch { }
+            base.OnClosed(e);
+        }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
         {
@@ -185,7 +197,7 @@ namespace MyWpfApp
                         OpenPdfWithDefaultViewer(jobContext.orgPdfName);
                         break;
                     case "Remove Job":
-                        MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        //MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
                         break;
                 }
             }
@@ -223,9 +235,9 @@ namespace MyWpfApp
                                 {
                                     ActivityLogger.LogAction("PrintJob", $"User requested printing file '{fileContext}' to printer '{parentPrinter?.Name ?? "Unknown"}'");
                                 }
-                                catch
+                                catch(Exception ex)
                                 {
-                                    // swallow logging errors
+                                    Debug.WriteLine($"Exception when logging print job: {ex}");
                                 }
 
                                 var server = new LocalPrintServer();
@@ -258,7 +270,7 @@ namespace MyWpfApp
                                             {
                                                 ActivityLogger.LogAction("PrintJobSuccess", $"File '{fileContext}' sent to printer '{parentPrinter.Name}'");
                                             }
-                                            catch { }
+                                            catch(Exception ex) { Debug.WriteLine($"Exception when validating print success: {ex}"); }
                                         }
                                         else
                                         {
@@ -269,16 +281,13 @@ namespace MyWpfApp
                                             {
                                                 ActivityLogger.LogAction("PrintJobFailure", $"Failed to send file '{fileContext}' to printer '{parentPrinter.Name}'");
                                             }
-                                            catch { }
+                                            catch(Exception ex) { Debug.WriteLine($"Exception when validating print failure: {ex}"); }
                                         }
                                     }
                                 }
 
                                 break;
                             case "View Job":
-                                //MessageBox.Show($"File Context: View requested for file '{fileContext}'" +
-                                //    $"with Parent Job '{parentJob.orgPdfName}'" +
-                                //    $"in Printer '{parentPrinter.Name}'");
                                 OpenPdfWithDefaultViewer(fileContext);
                                 break;
                             case "Move Job":
@@ -316,7 +325,8 @@ namespace MyWpfApp
                                             {
                                                 RefreshPrinterViewModels();
                                                 MessageBox.Show($"Split PDF '{fileContext}' moved to printer '{dlg.SelectedPrinterName}'.", "Move Job", MessageBoxButton.OK, MessageBoxImage.Information);
-                                                try { ActivityLogger.LogAction("MoveSplitFile", $"User moved '{fileContext}' from job {parentJob.jobId} to '{dlg.SelectedPrinterName}'"); } catch { }
+                                                try { ActivityLogger.LogAction("MoveSplitFile", $"User moved '{fileContext}' from job {parentJob.jobId} to '{dlg.SelectedPrinterName}'"); }
+                                                catch(Exception ex) { Debug.WriteLine($"Exception when logging job move: {ex}"); }
                                             }
                                             else
                                             {
@@ -350,7 +360,8 @@ namespace MyWpfApp
                                         RefreshPrinterViewModels();
 
                                         MessageBox.Show($"Removed file '{fileContext}' from job '{parentJob.orgPdfName}'.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Information);
-                                        try { ActivityLogger.LogAction("RemoveSplitFile", $"User removed '{fileContext}' from job {parentJob.jobId}"); } catch { }
+                                        try { ActivityLogger.LogAction("RemoveSplitFile", $"User removed '{fileContext}' from job {parentJob.jobId}"); }
+                                        catch(Exception ex) { Debug.WriteLine($"Exception when logging job removal: {ex}"); }
                                     }
                                     else
                                     {
@@ -416,33 +427,6 @@ namespace MyWpfApp
                 {
                     MessageBox.Show($"Failed to move job: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-            }
-        }
-
-        private void RightClickPrintJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem )
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Printing job");
-            }
-        }
-
-        private void RightClickRemoveJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Removing job");
-            }
-        }
-
-        private void RightClickViewJob(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                // Do something with 'job'
-                MessageBox.Show($"Viewing job");
             }
         }
 
