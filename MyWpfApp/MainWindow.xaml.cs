@@ -1,6 +1,7 @@
 ﻿using FileSystemItemModel.Model;
 using MyWpfApp.Model;
 using static MyWpfApp.Model.PdfUtil;
+using MyWpfApp.Utilities;
 using Printer.ViewModel;
 using System;
 using System.Collections;
@@ -219,6 +220,16 @@ namespace MyWpfApp
                         {
                             case "Print Job":
 
+                                // Log user-initiated print action (non-blocking)
+                                try
+                                {
+                                    ActivityLogger.LogAction("PrintJob", $"User requested printing file '{fileContext}' to printer '{parentPrinter?.Name ?? "Unknown"}'");
+                                }
+                                catch
+                                {
+                                    // swallow logging errors
+                                }
+
                                 var server = new LocalPrintServer();
                                 var printQueue = server.GetPrintQueue(parentPrinter.Name);
                                 printQueue.Refresh();
@@ -243,10 +254,24 @@ namespace MyWpfApp
                                         if (printResult)
                                         {
                                             MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                            // Log successful send
+                                            try
+                                            {
+                                                ActivityLogger.LogAction("PrintJobSuccess", $"File '{fileContext}' sent to printer '{parentPrinter.Name}'");
+                                            }
+                                            catch { }
                                         }
                                         else
                                         {
                                             MessageBox.Show($"Failed to send job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                                            // Log failure
+                                            try
+                                            {
+                                                ActivityLogger.LogAction("PrintJobFailure", $"Failed to send file '{fileContext}' to printer '{parentPrinter.Name}'");
+                                            }
+                                            catch { }
                                         }
                                     }
                                 }
