@@ -13,13 +13,8 @@
         Title="DocReformed" Height="720" Width="1280">
 
     <Grid>
-        <!-- Wrap the original fixed-design UI inside a Viewbox to provide uniform scaling (fixing the full-screen issue)
-             The TabControl below uses the original design dimensions as the Viewbox child size
-             Viewbox will scale that content uniformly when the window is resized -->
         <Viewbox Stretch="Uniform" StretchDirection="Both" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <!-- Use the original TabControl design size as the Viewbox content size -->
             <TabControl Width="1260" Height="684" Margin="10,0,10,0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <!-- Tab 1 (Print Job Manager) -->
                 <TabItem Header="Print Job Manager">
                     <Grid Margin="0,0,10,0">
                         <Grid.ColumnDefinitions>
@@ -42,7 +37,6 @@
 
                         <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="164,16,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center" Grid.ColumnSpan="2" Visibility="Collapsed"/>
 
-                        <!-- Make the TreeView stretch so it grows/shrinks with the window -->
                         <TreeView Name="fileTreeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,54,0,0" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
                             <TreeView.DataContext>
                                 <fsvm:FileSyetemViewModel/>
@@ -60,11 +54,8 @@
                             </TreeView.ItemContainerStyle>
                         </TreeView>
 
-                        <!-- Print Manager GroupBox - allow it to stretch within its column -->
                         <GroupBox VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Grid.Column="2">
-                            <!-- Outer ScrollViewer to enable vertical scrolling when there are too many jobs for the vissible area -->
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                <!-- Disable the DataGrid's internal vertical scrollbar so only the outer ScrollViewer handles vertical scrolling -->
                                 <DataGrid Name="PrintJobManager" 
                                           ItemsSource="{Binding AvailablePrinters}" 
                                           VerticalAlignment="Stretch" 
@@ -91,11 +82,11 @@
 
                                                             <DataTemplate DataType="{x:Type jobModel:Job}">
                                                                 <StackPanel>
-
                                                                     <StackPanel.ContextMenu>
                                                                         <ContextMenu>
                                                                             <MenuItem Header="View Job" Click="RightClickGetJob"/>
                                                                             <MenuItem Header="Remove Job" Click="RightClickGetJob"/>
+                                                                            <MenuItem Header="Move Job" Click="RightClickMoveJob"/>
                                                                         </ContextMenu>
                                                                     </StackPanel.ContextMenu>
                                                                     <StackPanel Orientation="Horizontal">
@@ -115,61 +106,50 @@
                                                                                         <ContextMenu>
                                                                                             <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
                                                                                             <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
-                                                                                            <MenuItem Header="View Job" Click="RightClickGetFile"   />
-                                                                                            <MenuItem Header="Move Job" Click="RightClickGetFile"   />
+                                                                                            <MenuItem Header="View Job" Click="RightClickGetFile"/>
+                                                                                            <MenuItem Header="Move Job" Click="RightClickGetFile"/>
                                                                                         </ContextMenu>
                                                                                     </Button.ContextMenu>
-                                                                                    
                                                                                 </Button>
                                                                             </DataTemplate>
                                                                         </ItemsControl.ItemTemplate>
                                                                     </ItemsControl>
                                                                 </StackPanel>
                                                             </DataTemplate>
-                                                            
-
                                                         </TreeView.Resources>
                                                     </TreeView>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-
                                     </DataGrid.Columns>
-                                    
 
                                     <DataGrid.DataContext>
                                         <vm:PrinterViewModel/>
                                     </DataGrid.DataContext>
-
                                 </DataGrid>
                             </ScrollViewer>
                         </GroupBox>
                     </Grid>
                 </TabItem>
-                <!-- Tab 2 (Settings)  -->
                 <TabItem Header="Settings">
+                    <!-- (Unchanged) -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="8*"/>
                             <ColumnDefinition Width="201*"/>
                         </Grid.ColumnDefinitions>
-
+                        <!-- Settings content unchanged -->
                         <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="InputDir" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
-
                         <Label Content="Adobe Path" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="adobePathBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
-
                         <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="archiveDirTextBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
-
                         <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="jobDirTextBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,71,0,0" FontSize="12" Grid.Column="1" />
-
                         <Label Content="Add Printer" Margin="0,90,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <ComboBox Name="printerPickComboBox" MinWidth="200" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,94,0,0" FontSize="12" Grid.Column="1"/>
                         <Button Name="AddPrinterButton" Content="Add" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,94,0,0" Click="AddPrinterButton_Click" Grid.Column="1"/>
-
                         <Label Content="Remove Printer" Margin="0,120,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <ComboBox Name="currentPrinterPickComboBox" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" MinWidth="200" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="52,120,0,0" FontSize="12" Grid.Column="1">
                             <ComboBox.DataContext>
@@ -177,7 +157,6 @@
                             </ComboBox.DataContext>
                         </ComboBox>
                         <Button Name="RemovePrinterButton" Content="Remove" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,120,0,0" Click="RemovePrinterButton_Click" Grid.Column="1"/>
-
                         <Label Content="Max Pages per Split" Margin="0,150,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="MaxPagesTextBox" MinWidth="100" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="150,150,0,0" FontSize="12" Grid.Column="1"/>
                         <Button Name="ApplyMaxPagesButton" Content="Apply" MinWidth="60" MinHeight="22" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="262,150,0,0" Click="ApplyMaxPagesButton_Click" Grid.Column="1"/>

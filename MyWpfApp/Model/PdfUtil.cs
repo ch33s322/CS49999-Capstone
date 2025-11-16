@@ -10,9 +10,6 @@ using System.Windows;
 
 namespace MyWpfApp.Model
 {
-    // <summary>
-    // 
-    // </summary>
     public static class PdfUtil
     {
         /// <summary>
