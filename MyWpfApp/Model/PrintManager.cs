@@ -311,14 +311,29 @@ namespace MyWpfApp.Model
                     _printers.Add(unassigned);
                 }
 
-                int movedCount = 0;
-                foreach (var j in entry.Jobs)
+                entry.Jobs.Clear();
+
+                //int movedCount = 0;
+                //foreach (var job in entry.Jobs)
+                //{
+                //    job.printerName = unassigned.Name;
+                //    if (!unassigned.Jobs.Any(actualJob => actualJob.jobId == job.jobId))
+                //    {
+                //        unassigned.Jobs.Add(job);
+                //        movedCount++;
+                //    }
+                //}
+
+                //delete files from job dir
+                List<Job> jobs = GetJobsForPrinter(printerName);
+                foreach (var job in jobs)
                 {
-                    j.printerName = unassigned.Name;
-                    if (!unassigned.Jobs.Any(x => x.jobId == j.jobId))
+                    //delete the job
+                    var fileNames = job.fileNames;
+                    foreach (var name in fileNames)
                     {
-                        unassigned.Jobs.Add(j);
-                        movedCount++;
+                        Debug.WriteLine(name);
+                        DeletePdfFromJobDir(name);
                     }
                 }
 
@@ -333,7 +348,7 @@ namespace MyWpfApp.Model
                 }
                 catch { }
 
-                try { ActivityLogger.LogAction("RemovePrinter", $"Printer '{printerName}' removed; {movedCount} job(s) moved to unassigned"); } catch { }
+                try { ActivityLogger.LogAction("RemovePrinter", $"Printer '{printerName}' removed; ur mom job(s) moved to unassigned"); } catch { }
             }
 
             if (removed != null) RaiseJobsChanged();
@@ -493,6 +508,31 @@ namespace MyWpfApp.Model
             }
 
             return null;
+        }
+
+        public void DeletePdfFromJobDir(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+
+            //build full path in JobWell
+            var fullPath = Path.Combine(AppSettings.JobDir, fileName);
+
+            //ensure the file is inside the JobWell directory
+            if (!fullPath.StartsWith(AppSettings.JobDir, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Cannot delete files outside the JobDir directory.");
+
+            if (File.Exists(fullPath))
+            {
+                try
+                {
+                    File.Delete(fullPath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to delete file '{fullPath}': {ex.Message}");
+                }
+            }
         }
 
         // -- Printing --
