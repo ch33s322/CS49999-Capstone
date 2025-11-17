@@ -311,7 +311,7 @@ namespace MyWpfApp.Model
                     _printers.Add(unassigned);
                 }
 
-                entry.Jobs.Clear();
+                
 
                 //int movedCount = 0;
                 //foreach (var job in entry.Jobs)
@@ -336,6 +336,8 @@ namespace MyWpfApp.Model
                         DeletePdfFromJobDir(name);
                     }
                 }
+
+                entry.Jobs.Clear();
 
                 _printers.Remove(entry);
                 removed = entry;
@@ -440,7 +442,7 @@ namespace MyWpfApp.Model
                     {
                         Name = p.Name,
                         Status = p.Status,
-                        Jobs = p.Jobs ?? new List<Job>()
+                        Jobs = p.Jobs 
                     }).ToList();
 
                     using (var fs = File.Create(path))
