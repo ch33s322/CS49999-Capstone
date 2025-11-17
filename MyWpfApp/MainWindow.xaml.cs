@@ -44,16 +44,15 @@ namespace MyWpfApp
             _printManager = new PrintManager();
             _printManager.JobsChanged += PrintManager_JobsChanged;
 
-            // If an Adobe path was previously saved, ensure the PrintManager knows about it
             try
             {
-                _printManager.AdobeReaderPath = AppSettings.AdobePath;
+                StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
             }
             catch
             {
-                // ignore
+                // ignore startup errors
             }
-           
+
             //Directory.Delete(AppSettings.JobDir, true);
             //Directory.Delete(AppSettings.PrinterDir, true);
             //File.WriteAllText(AppSettings., string.Empty);
@@ -132,16 +131,7 @@ namespace MyWpfApp
                 // ignore if control not present
             }
 
-            // Initialize Adobe path textbox with current setting and persist on lost focus
-            try
-            {
-                adobePathBox.Text = AppSettings.AdobePath;
-                adobePathBox.LostFocus += AdobePathBox_LostFocus;
-            }
-            catch
-            {
-                // ignore if control not present
-            }
+            
 
             // Start poller if a valid InputDir is configured
             try
@@ -254,7 +244,7 @@ namespace MyWpfApp
                                 else
                                 {
                                     // Code to send the job to the printer would go here
-                                    MessageBox.Show($"Sending job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    //MessageBox.Show($"Sending job '{fileContext}' to printer '{parentPrinter.Name}'.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
 
                                     //check printer status is a form of connected
                                     if (parentPrinter.Status == "Ready" || parentPrinter.Status == "Printing")
@@ -263,7 +253,7 @@ namespace MyWpfApp
                                         var printResult = await _printManager.PrintJobAsync(fileContext, parentPrinter.Name);
                                         if (printResult)
                                         {
-                                            MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                            //MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
 
                                             // Log successful send
                                             try
@@ -621,28 +611,7 @@ namespace MyWpfApp
             }
         }
 
-        // Persist AdobePath when user finishes editing (LostFocus). Normalize and persist.
-        private void AdobePathBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            var tb = sender as TextBox;
-            if (tb == null) return;
-
-            var newPath = tb.Text?.Trim() ?? string.Empty;
-            try
-            {
-                // Setting AppSettings.AdobePath will normalize (if non-empty) and persist
-                AppSettings.AdobePath = newPath;
-                // Inform PrintManager about the change
-                try { _printManager.AdobeReaderPath = AppSettings.AdobePath; } catch { }
-
-                MessageBox.Show($"Adobe path set to:\n{AppSettings.AdobePath}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to set Adobe path: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                tb.Text = AppSettings.AdobePath;
-            }
-        }
+        
 
         // Start a new PollAndArchive or restart if input or archive or job path changed.
         private void StartOrRestartPoller(string inputPath, string archivePath, string jobPath)

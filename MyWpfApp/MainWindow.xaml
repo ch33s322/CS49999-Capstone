@@ -141,8 +141,6 @@
                         <!-- Settings content unchanged -->
                         <Label Content="Input Directory" Margin="0,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="InputDir" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,5,0,0" FontSize="12" TextChanged="DirectorySelectTextChanged" Grid.Column="1"/>
-                        <Label Content="Adobe Path" Margin="0,22,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
-                        <TextBox Name="adobePathBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,27,0,0" FontSize="12" Grid.Column="1" />
                         <Label Content="Archive Directory" Margin="0,44,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>
                         <TextBox Name="archiveDirTextBox" MinWidth="220" MinHeight="18" VerticalAlignment="Top" HorizontalAlignment="Left" BorderThickness="2" Margin="52,49,0,0" FontSize="12" Grid.Column="1" />
                         <Label Content="Job Directory" Margin="0,66,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2"/>

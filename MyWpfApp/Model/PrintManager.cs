@@ -25,7 +25,7 @@ namespace MyWpfApp.Model
         private List<PrinterClass> _printers = new List<PrinterClass>();
 
         private const string UnassignedPrinterName = "";
-        public string AdobeReaderPath { get; set; } = @"C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe";
+        public string AdobeReaderPath { get; private set; }
 
         // Raised after any change to jobs (add/remove/move or split file deletion).
         public event EventHandler JobsChanged;
