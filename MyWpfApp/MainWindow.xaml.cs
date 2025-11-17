@@ -546,7 +546,7 @@ namespace MyWpfApp
 
                 StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
 
-                MessageBox.Show($"Input directory set to:\n{AppSettings.InputDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Input directory set to:\n{AppSettings.InputDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -579,7 +579,7 @@ namespace MyWpfApp
 
                 StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
 
-                MessageBox.Show($"Archive directory set to:\n{AppSettings.ArchiveDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Archive directory set to:\n{AppSettings.ArchiveDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -612,7 +612,7 @@ namespace MyWpfApp
 
                 StartOrRestartPoller(AppSettings.InputDir, AppSettings.ArchiveDir, AppSettings.JobDir);
 
-                MessageBox.Show($"Job directory set to:\n{AppSettings.JobDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Job directory set to:\n{AppSettings.JobDir}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -635,7 +635,7 @@ namespace MyWpfApp
                 // Inform PrintManager about the change
                 try { _printManager.AdobeReaderPath = AppSettings.AdobePath; } catch { }
 
-                MessageBox.Show($"Adobe path set to:\n{AppSettings.AdobePath}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show($"Adobe path set to:\n{AppSettings.AdobePath}", "Settings saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
