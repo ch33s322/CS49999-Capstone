@@ -537,6 +537,22 @@ namespace MyWpfApp.Model
             }
         }
 
+        public void DeletePdfFromJSONStore(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+            Guid jobId;
+            if (TryFindJobIdBySplitFile(fileName, out jobId))
+            {
+                RemoveSplitFileFromJob(jobId, fileName);
+            }
+        }
+
+        public void deleteJobFromStore(Guid jobId)
+        {
+            ReleaseJob(jobId);
+        }
+
         // -- Printing --
 
         public async Task<bool> PrintJobAsync(string pdfName, string printerName)
@@ -685,7 +701,8 @@ namespace MyWpfApp.Model
                         observedJobId = job.JobIdentifier;
 
                         if (!job.JobStatus.HasFlag(PrintJobStatus.Spooling) && job.NumberOfPages >= pagesToPrint) return true;
-                        if (job.IsCompleted || job.IsDeleted) return true;
+                        if (job.IsCompleted) return true;
+                        if (job.IsDeleted) return false;
 
                         if (job.JobStatus.HasFlag(PrintJobStatus.Error) || job.JobStatus.HasFlag(PrintJobStatus.Offline))
                             throw new InvalidOperationException($"Print job in error state: {job.JobStatus}");
@@ -694,7 +711,7 @@ namespace MyWpfApp.Model
                     }
                     else
                     {
-                        if (observedJobId != null) return true;
+                        if (observedJobId != null) return false;
                     }
                 }
                 catch(Exception ex)

@@ -255,6 +255,16 @@ namespace MyWpfApp
                                         {
                                             //MessageBox.Show($"Job '{fileContext}' sent to printer '{parentPrinter.Name}' successfully.", "Print Job", MessageBoxButton.OK, MessageBoxImage.Information);
 
+                                            _printManager.DeletePdfFromJobDir(fileContext);
+                                            _printManager.DeletePdfFromJSONStore(fileContext);
+
+                                            parentJob.fileNames.Remove(fileContext);
+                                            if(parentJob.fileNames.Count == 0)
+                                            {
+                                                //if no more split files in job, remove the job
+                                                _printManager.ReleaseJob(parentJob.jobId);
+                                            }
+
                                             // Log successful send
                                             try
                                             {
