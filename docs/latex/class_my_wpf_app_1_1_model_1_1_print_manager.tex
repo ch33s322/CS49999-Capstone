@@ -1,0 +1,180 @@
+\doxysection{My\+Wpf\+App.\+Model.\+Print\+Manager Class Reference}
+\hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager}{}\label{class_my_wpf_app_1_1_model_1_1_print_manager}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_aa158ddd8f09f3d5626cf0b78436fcc06}{Print\+Manager}} ()
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a5582f030ea82c95712418077c9988ae8}{Queue\+Job}} (\mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}} job)
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_ad07aef95b40d90e438ba1e771be9c49b}{Release\+Job}} (Guid job\+Id)
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a913e97acf2271ffb1c489e065e615245}{Set\+Job\+Simplex\+Flag}} (Guid job\+Id, bool flag)
+\item 
+bool \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_aca85cba8a00ad98d88b759d20d2a7889}{Remove\+Split\+File\+From\+Job}} (Guid job\+Id, string split\+Pdf\+Name)
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_abfbfddf992c36d429635182df0166c30}{Set\+Job\+Printer}} (Guid job\+Id, string printer\+Name)
+\item 
+bool \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_ad31f1aae43ad74f2982c0859f1e6e266}{Add\+Printer}} (string Printer\+Name)
+\item 
+\mbox{\hyperlink{_print_manager_8cs_a30702c2dec734b1ed6ec03f4bdf43f8e}{Printer\+Class}} \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_ad43e793d127c1357a8e154cae1e2cedf}{Remove\+Printer}} (string printer\+Name)
+\item 
+List$<$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}} $>$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_af79033328a7a4904b396cb7ae682543b}{Get\+Jobs}} ()
+\item 
+List$<$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}} $>$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a43fc784696ef5cfd0bb9fd6db0ab0976}{Get\+Jobs\+For\+Printer}} (string printer)
+\item 
+List$<$ string $>$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a3fe8ad6fab7325f8729964a5342f7199}{get\+All\+Printers}} ()
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_ab94ef4268b89dadc801736258182839f}{Delete\+Pdf\+From\+Job\+Dir}} (string file\+Name)
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a725f77a25ba65e2374d36141f10375b9}{Delete\+Pdf\+From\+JSONStore}} (string file\+Name)
+\item 
+void \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a6e0ad1432b4154323a770275bd58699c}{delete\+Job\+From\+Store}} (Guid job\+Id)
+\item 
+async Task$<$ bool $>$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a2978b540d6aa087b51cc8caa844c50fc}{Print\+Job\+Async}} (string pdf\+Name, string printer\+Name)
+\item 
+bool \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_acfe4c96ea1fde0a6ec0766f8f33a5da7}{Move\+Split\+File\+To\+Printer}} (Guid source\+Job\+Id, string split\+Pdf\+Name, string target\+Printer\+Name)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Properties}
+\begin{DoxyCompactItemize}
+\item 
+string \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a795faf84d758efa1969dd295981c6c64}{Adobe\+Reader\+Path}}\hspace{0.3cm}{\ttfamily  \mbox{[}get\mbox{]}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Events}
+\begin{DoxyCompactItemize}
+\item 
+Event\+Handler \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_print_manager_a714ff8110843aa5832349597ab6bcf49}{Jobs\+Changed}}
+\end{DoxyCompactItemize}
+
+
+\label{doc-constructors}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_aa158ddd8f09f3d5626cf0b78436fcc06}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!PrintManager@{PrintManager}}
+\index{PrintManager@{PrintManager}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{PrintManager()}{PrintManager()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_aa158ddd8f09f3d5626cf0b78436fcc06} 
+My\+Wpf\+App.\+Model.\+Print\+Manager.\+Print\+Manager (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\label{doc-func-members}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_ad31f1aae43ad74f2982c0859f1e6e266}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!AddPrinter@{AddPrinter}}
+\index{AddPrinter@{AddPrinter}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{AddPrinter()}{AddPrinter()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_ad31f1aae43ad74f2982c0859f1e6e266} 
+bool My\+Wpf\+App.\+Model.\+Print\+Manager.\+Add\+Printer (\begin{DoxyParamCaption}\item[{string}]{Printer\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a6e0ad1432b4154323a770275bd58699c}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!deleteJobFromStore@{deleteJobFromStore}}
+\index{deleteJobFromStore@{deleteJobFromStore}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{deleteJobFromStore()}{deleteJobFromStore()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a6e0ad1432b4154323a770275bd58699c} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+delete\+Job\+From\+Store (\begin{DoxyParamCaption}\item[{Guid}]{job\+Id}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_ab94ef4268b89dadc801736258182839f}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!DeletePdfFromJobDir@{DeletePdfFromJobDir}}
+\index{DeletePdfFromJobDir@{DeletePdfFromJobDir}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{DeletePdfFromJobDir()}{DeletePdfFromJobDir()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_ab94ef4268b89dadc801736258182839f} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Delete\+Pdf\+From\+Job\+Dir (\begin{DoxyParamCaption}\item[{string}]{file\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a725f77a25ba65e2374d36141f10375b9}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!DeletePdfFromJSONStore@{DeletePdfFromJSONStore}}
+\index{DeletePdfFromJSONStore@{DeletePdfFromJSONStore}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{DeletePdfFromJSONStore()}{DeletePdfFromJSONStore()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a725f77a25ba65e2374d36141f10375b9} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Delete\+Pdf\+From\+JSONStore (\begin{DoxyParamCaption}\item[{string}]{file\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a3fe8ad6fab7325f8729964a5342f7199}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!getAllPrinters@{getAllPrinters}}
+\index{getAllPrinters@{getAllPrinters}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{getAllPrinters()}{getAllPrinters()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a3fe8ad6fab7325f8729964a5342f7199} 
+List$<$ string $>$ My\+Wpf\+App.\+Model.\+Print\+Manager.\+get\+All\+Printers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_af79033328a7a4904b396cb7ae682543b}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!GetJobs@{GetJobs}}
+\index{GetJobs@{GetJobs}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{GetJobs()}{GetJobs()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_af79033328a7a4904b396cb7ae682543b} 
+List$<$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}} $>$ My\+Wpf\+App.\+Model.\+Print\+Manager.\+Get\+Jobs (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a43fc784696ef5cfd0bb9fd6db0ab0976}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!GetJobsForPrinter@{GetJobsForPrinter}}
+\index{GetJobsForPrinter@{GetJobsForPrinter}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{GetJobsForPrinter()}{GetJobsForPrinter()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a43fc784696ef5cfd0bb9fd6db0ab0976} 
+List$<$ \mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}} $>$ My\+Wpf\+App.\+Model.\+Print\+Manager.\+Get\+Jobs\+For\+Printer (\begin{DoxyParamCaption}\item[{string}]{printer}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_acfe4c96ea1fde0a6ec0766f8f33a5da7}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!MoveSplitFileToPrinter@{MoveSplitFileToPrinter}}
+\index{MoveSplitFileToPrinter@{MoveSplitFileToPrinter}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{MoveSplitFileToPrinter()}{MoveSplitFileToPrinter()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_acfe4c96ea1fde0a6ec0766f8f33a5da7} 
+bool My\+Wpf\+App.\+Model.\+Print\+Manager.\+Move\+Split\+File\+To\+Printer (\begin{DoxyParamCaption}\item[{Guid}]{source\+Job\+Id}{, }\item[{string}]{split\+Pdf\+Name}{, }\item[{string}]{target\+Printer\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a2978b540d6aa087b51cc8caa844c50fc}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!PrintJobAsync@{PrintJobAsync}}
+\index{PrintJobAsync@{PrintJobAsync}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{PrintJobAsync()}{PrintJobAsync()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a2978b540d6aa087b51cc8caa844c50fc} 
+async Task$<$ bool $>$ My\+Wpf\+App.\+Model.\+Print\+Manager.\+Print\+Job\+Async (\begin{DoxyParamCaption}\item[{string}]{pdf\+Name}{, }\item[{string}]{printer\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a5582f030ea82c95712418077c9988ae8}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!QueueJob@{QueueJob}}
+\index{QueueJob@{QueueJob}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{QueueJob()}{QueueJob()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a5582f030ea82c95712418077c9988ae8} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Queue\+Job (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{class_my_wpf_app_1_1_model_1_1_job}{Job}}}]{job}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_ad07aef95b40d90e438ba1e771be9c49b}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!ReleaseJob@{ReleaseJob}}
+\index{ReleaseJob@{ReleaseJob}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{ReleaseJob()}{ReleaseJob()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_ad07aef95b40d90e438ba1e771be9c49b} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Release\+Job (\begin{DoxyParamCaption}\item[{Guid}]{job\+Id}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_ad43e793d127c1357a8e154cae1e2cedf}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!RemovePrinter@{RemovePrinter}}
+\index{RemovePrinter@{RemovePrinter}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{RemovePrinter()}{RemovePrinter()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_ad43e793d127c1357a8e154cae1e2cedf} 
+\mbox{\hyperlink{_print_manager_8cs_a30702c2dec734b1ed6ec03f4bdf43f8e}{Printer\+Class}} My\+Wpf\+App.\+Model.\+Print\+Manager.\+Remove\+Printer (\begin{DoxyParamCaption}\item[{string}]{printer\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_aca85cba8a00ad98d88b759d20d2a7889}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!RemoveSplitFileFromJob@{RemoveSplitFileFromJob}}
+\index{RemoveSplitFileFromJob@{RemoveSplitFileFromJob}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{RemoveSplitFileFromJob()}{RemoveSplitFileFromJob()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_aca85cba8a00ad98d88b759d20d2a7889} 
+bool My\+Wpf\+App.\+Model.\+Print\+Manager.\+Remove\+Split\+File\+From\+Job (\begin{DoxyParamCaption}\item[{Guid}]{job\+Id}{, }\item[{string}]{split\+Pdf\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_abfbfddf992c36d429635182df0166c30}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!SetJobPrinter@{SetJobPrinter}}
+\index{SetJobPrinter@{SetJobPrinter}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{SetJobPrinter()}{SetJobPrinter()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_abfbfddf992c36d429635182df0166c30} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Set\+Job\+Printer (\begin{DoxyParamCaption}\item[{Guid}]{job\+Id}{, }\item[{string}]{printer\+Name}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a913e97acf2271ffb1c489e065e615245}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!SetJobSimplexFlag@{SetJobSimplexFlag}}
+\index{SetJobSimplexFlag@{SetJobSimplexFlag}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{SetJobSimplexFlag()}{SetJobSimplexFlag()}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a913e97acf2271ffb1c489e065e615245} 
+void My\+Wpf\+App.\+Model.\+Print\+Manager.\+Set\+Job\+Simplex\+Flag (\begin{DoxyParamCaption}\item[{Guid}]{job\+Id}{, }\item[{bool}]{flag}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\label{doc-property-members}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_doc-property-members}
+\doxysubsection{Property Documentation}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a795faf84d758efa1969dd295981c6c64}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!AdobeReaderPath@{AdobeReaderPath}}
+\index{AdobeReaderPath@{AdobeReaderPath}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{AdobeReaderPath}{AdobeReaderPath}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a795faf84d758efa1969dd295981c6c64} 
+string My\+Wpf\+App.\+Model.\+Print\+Manager.\+Adobe\+Reader\+Path\hspace{0.3cm}{\ttfamily [get]}}
+
+
+
+\label{doc-event-members}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_doc-event-members}
+\doxysubsection{Event Documentation}
+\Hypertarget{class_my_wpf_app_1_1_model_1_1_print_manager_a714ff8110843aa5832349597ab6bcf49}\index{MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}!JobsChanged@{JobsChanged}}
+\index{JobsChanged@{JobsChanged}!MyWpfApp.Model.PrintManager@{MyWpfApp.Model.PrintManager}}
+\doxysubsubsection{\texorpdfstring{JobsChanged}{JobsChanged}}
+{\footnotesize\ttfamily \label{class_my_wpf_app_1_1_model_1_1_print_manager_a714ff8110843aa5832349597ab6bcf49} 
+Event\+Handler My\+Wpf\+App.\+Model.\+Print\+Manager.\+Jobs\+Changed}
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+My\+Wpf\+App/\+Model/\mbox{\hyperlink{_print_manager_8cs}{Print\+Manager.\+cs}}\end{DoxyCompactItemize}

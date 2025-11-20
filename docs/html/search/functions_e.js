@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['testassignjobtoprinter_0',['TestAssignJobToPrinter',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a1d0e2d003d9dec886b112dcb54a2cfdb',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testassignjobtoprinter_5fqueuejob_1',['TestAssignJobToPrinter_QueueJob',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a37699c416dc63f0f378720074b417e20',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testbadinputpath_2',['TestBadInputPath',['../class_my_wpf_app_1_1_tests_1_1_pdf_splitter_tests.html#ad00a8dd48e0aa3a996fee9fbcdbde56b',1,'MyWpfApp::Tests::PdfSplitterTests']]],
+  ['testbadoutputpath_3',['TestBadOutputPath',['../class_my_wpf_app_1_1_tests_1_1_pdf_splitter_tests.html#ab20d5b4f57c3e625b7212e3b01955ea8',1,'MyWpfApp::Tests::PdfSplitterTests']]],
+  ['testbadpdfpath_4',['TestBadPDFPath',['../class_my_wpf_app_1_1_tests_1_1_job_creation_tests.html#a4bafc31a8b2be695aa3dc0fbe20e0f7f',1,'MyWpfApp::Tests::JobCreationTests']]],
+  ['testbadprintercreation_5',['TestBadPrinterCreation',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#ab2f3da7f7cefd08a5a9a2da4b4d68f33',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testbadprinterremoval_6',['TestBadPrinterRemoval',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#ae82bf2e4976bfc239ecb7f6ec674d730',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testduplicateprintercreation_7',['TestDuplicatePrinterCreation',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a787e75fdd3eb4b63be4ab46f2b895ea5',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testgetadobereaderpath_8',['TestGetAdobeReaderPath',['../class_my_wpf_app_1_1_tests_1_1_printing_tests.html#af4b05f9f205b16e18b859c0c769f63be',1,'MyWpfApp::Tests::PrintingTests']]],
+  ['testinvalidmaxpage_9',['TestInvalidMaxPage',['../class_my_wpf_app_1_1_tests_1_1_pdf_splitter_tests.html#aae42c1f9f1074cb1e41e62ef5d57782b',1,'MyWpfApp::Tests::PdfSplitterTests']]],
+  ['testprintercreation_10',['TestPrinterCreation',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#af82ca81d251fb6bc5e409e8c11cff020',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testprinterremoval_11',['TestPrinterRemoval',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a400c82d99c9f6d9c012360c80cb10172',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testprinterstatusupdate_12',['TestPrinterStatusUpdate',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a7c53af63a58ac40a78046c7412911ee2',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testprintertostring_13',['TestPrinterToString',['../class_my_wpf_app_1_1_tests_1_1_printer_tests.html#a1141130f8ed04bc5efc929aab1b67ca1',1,'MyWpfApp::Tests::PrinterTests']]],
+  ['testprintingsinglepagepdf_14',['TestPrintingSinglePagePdf',['../class_my_wpf_app_1_1_tests_1_1_printing_tests.html#a8ca998baf46c363dd7f01f86a6d28c24',1,'MyWpfApp::Tests::PrintingTests']]],
+  ['tostring_15',['ToString',['../class_my_wpf_app_1_1_model_1_1_job.html#abd041539319e3c45f20c2367152b738f',1,'MyWpfApp.Model.Job.ToString()'],['../class_printer_1_1_model_1_1_printer.html#a41b714ca36a983b8ed78b82af70dc24b',1,'Printer.Model.Printer.ToString()']]]
+];
