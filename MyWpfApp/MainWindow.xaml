@@ -23,7 +23,7 @@
                             <ColumnDefinition Width="463*"/>
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox Name="PrinterSelect" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged">
+                        <ComboBox Name="PrinterSelect" ItemsSource="{Binding AvailablePrinters}"  DisplayMemberPath="Name" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,10,0,0" Text="Select Printer" FontSize="20" IsEditable="True" IsReadOnly="True" SelectionChanged="PrinterSelectSelectionChanged" Height="31" Width="141">
                             <ComboBox.DataContext>
                                 <vm:PrinterViewModel/>
                             </ComboBox.DataContext>
@@ -33,11 +33,11 @@
 
                         <Button Name="SendJob"
                                 VerticalAlignment="Top" HorizontalAlignment="Left"
-                                Content="Send Job" FontSize="20" Margin="37,10,0,0" Click="SendJobClick" RenderTransformOrigin="0.5,-0.845" Grid.Column="1" Grid.ColumnSpan="2"/>
+                                Content="Send Job" FontSize="20" Margin="37,10,0,0" Click="SendJobClick" RenderTransformOrigin="0.5,-0.845" Grid.Column="1" Grid.ColumnSpan="2" Width="100"/>
 
                         <Label x:Name="checkboxLabel" Content="Duplex" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="164,16,0,0" Height="27" Width="63" FontSize="15" TextBlock.TextAlignment="Center" Grid.ColumnSpan="2" Visibility="Collapsed"/>
 
-                        <TreeView Name="fileTreeView" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="10,54,0,0" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
+                        <TreeView Name="fileTreeView" Margin="10,54,895,0" ItemsSource="{Binding RootItems}" Grid.ColumnSpan="3">
                             <TreeView.DataContext>
                                 <fsvm:FileSyetemViewModel/>
                             </TreeView.DataContext>
