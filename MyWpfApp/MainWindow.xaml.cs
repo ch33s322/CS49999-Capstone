@@ -790,5 +790,10 @@ namespace MyWpfApp
             PrinterSelect.SelectedIndex = -1;
             PrinterSelect.Text = "Select Printer";
         }
+
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }
