@@ -52,8 +52,8 @@
                                 <ComboBox.DataContext>
                                     <vm:PrinterViewModel/>
                                 </ComboBox.DataContext>
-                                
-                                
+
+
 
                             </ComboBox>
                             <!--Select Printer Drop down End-->
@@ -114,7 +114,7 @@
                                 </TreeView.ItemContainerStyle>
                             </TreeView>
 
-                            <GroupBox VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="36,0,0,0" Header="Job Queue Manager" BorderThickness="1" Grid.Column="2">
+                            <GroupBox Margin="10,0,0,0" Header="Job Queue Manager" BorderThickness="1" Grid.Column="2">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                     <DataGrid Name="PrintJobManager" 
                                               ItemsSource="{Binding AvailablePrinters}" 
@@ -155,7 +155,8 @@
                                                                                        Foreground="Black"/>
                                                                         </StackPanel>
 
-                                                                        <ItemsControl ItemsSource="{Binding fileNames}" Margin="15,0,0,0">
+
+                                                                        <ItemsControl ItemsSource="{Binding fileNames}" Margin="15,0,0,0" AlternationCount="2">
                                                                             <ItemsControl.ItemTemplate>
                                                                                 <DataTemplate>
                                                                                     <Button Content="{Binding .}" 

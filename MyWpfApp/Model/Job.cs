@@ -20,6 +20,10 @@ namespace MyWpfApp.Model
         public DateTime dateTime { get; set; } = DateTime.Now;
         //simplex or duplex(by default it is simplex, false means duplex)
         public bool Simplex { get; set; } = true;
+        //storing Page Count information
+        //public List<int> pageCount { get; set; }
+        ////Storing Size of each pdf section in 
+        //public List<long> fileSizes { get; set; }
 
         // parameterless ctor — required for serializers and deserializers
         public Job()
