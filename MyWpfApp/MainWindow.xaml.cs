@@ -188,6 +188,7 @@ namespace MyWpfApp
                         break;
                     case "Remove Job":
                         //MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        RemoveJob(jobContext);
                         break;
                 }
             }
@@ -427,6 +428,113 @@ namespace MyWpfApp
                 {
                     MessageBox.Show($"Failed to move job: {ex.Message}", "Move Job", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        // 
+        private void RemoveJob(Job job)
+        {
+            if (job == null)
+            {
+                return;
+            }
+
+            // Make the user confirm
+            var confirm = MessageBox.Show(
+                $"Are you sure you want to remove the job for '{job.orgPdfName}' and all of its split files?",
+                "Confirm Remove Job",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                try
+                {
+                    ActivityLogger.LogAction(
+                        "RemoveJob",
+                        $"Attempting removal of job '{job.jobId}' " +
+                        $"('{job.orgPdfName}') containing {job.fileNames?.Count ?? 0} split files.");
+                }
+                catch (Exception exLogStart)
+                {
+                    Debug.WriteLine($"[LOG ERROR] Could not log start of RemoveJob: {exLogStart}");
+                }
+
+                // Delete split PDFs associated with this job
+                if (job.fileNames != null)
+                {
+                    foreach (var split in job.fileNames)
+                    {
+                        try
+                        {
+                            _printManager.DeletePdfFromJobDir(split);
+                            _printManager.DeletePdfFromJSONStore(split);
+
+                            // Uncomment for more verbose logging
+                            //ActivityLogger.LogAction(
+                            //    "RemoveJob-DeleteSplit",
+                            //    $"Deleted split PDF '{split}' for job '{job.jobId}'.");
+                        } 
+                        catch (Exception exSplit)
+                        {
+                            ActivityLogger.LogAction(
+                                "RemoveJob-DeleteSplit-Error",
+                                $"Failed to delete split PDF '{split}' for job '{job.jobId}': {exSplit.Message}");
+                        }
+                            
+                    }
+                }
+                // Remove job from persistent store
+                try
+                {
+                    _printManager.deleteJobFromStore(job.jobId);
+                    // Uncomment for more verbose logging
+                    //ActivityLogger.LogAction(
+                    //    "RemoveJob-DeleteStoreEntry",
+                    //    $"Removed job '{job.jobId}' from printer store.");
+                }
+                catch (Exception exStore)
+                {
+                    ActivityLogger.LogAction(
+                        "RemoveJob-DeleteStoreEntry-Error",
+                        $"Failed removing job '{job.jobId}' from printer store: {exStore.Message}");
+                    Debug.WriteLine($"Error removing job from store: {exStore.Message}");
+                }
+
+                // Remove job from the queue
+                if (_selectedPrinter != null && _selectedPrinter.Jobs.Contains(job))
+                {
+                    _selectedPrinter.Jobs.Remove(job);
+                }
+
+                // Refresh bindings / view models
+                RefreshPrinterViewModels();
+
+                ActivityLogger.LogAction(
+                    "RemoveJob-Complete",
+                    $"Successfully removed job '{job.jobId}' ('{job.orgPdfName}').");
+
+                MessageBox.Show(
+                    $"Job '{job.orgPdfName}' removed.",
+                    "Remove Job",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+            } 
+            catch (Exception ex)
+            {
+                ActivityLogger.LogAction(
+                    "RemoveJob-FatalError",
+                    $"Critical failure while removing job '{job.jobId}': {ex.Message}");
+
+                MessageBox.Show(
+                    $"Error removing job '{job.orgPdfName}': {ex.Message}",
+                    "Remove Job",
+                    MessageBoxButton.OK,
+                     MessageBoxImage.Error);
             }
         }
 
