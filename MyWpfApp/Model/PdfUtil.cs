@@ -1,5 +1,6 @@
 ﻿using PdfSharpCore.Pdf;
 using PdfSharpCore.Pdf.Advanced;
+using PdfSharpCore.Pdf.IO;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -108,6 +109,45 @@ namespace MyWpfApp.Model
         }
 
         /// <summary>
+        /// Gets the total number of pages in a PDF document.
+        /// </summary>
+        /// <param name="pdfPath">
+        /// Path to the PDF file
+        /// </param>
+        public static int GetPageCount(string pdfPath)
+        {
+            using (var doc = PdfReader.Open(pdfPath, PdfDocumentOpenMode.Import))
+            {
+                return doc.PageCount;
+            }
+        }
+
+        /// <summary>
+        /// Extracts the raw content bytes of a specific page in a PDF document.
+        /// </summary>
+        /// <param name="doc">
+        /// PdfDocument object representing the loaded PDF.
+        /// </param>
+        /// <param name="pageIndex">
+        /// Zero-based index of the page to extract bytes from.
+        /// </param>
+        /// <returns></returns>
+        public static byte[] GetPageBytes(PdfDocument doc, int pageIndex)
+        {
+            var page = doc.Pages[pageIndex];
+            // Extract PDF content bytes safely
+            PdfContent content = null;
+            if (page.Contents != null)
+                content = page.Contents.CreateSingleContent();
+            byte[] bytes;
+            if (content != null && content.Stream != null)
+                bytes = content.Stream.Value; // The real bytes
+            else
+                bytes = new byte[0];
+            return bytes;
+        }
+
+        /// <summary>
         /// Computers a SHA256 hash of the content bytes of a specific page in a PDF document.
         /// This can be used for integrity checks or to detect changes to specific pages.
         /// 
@@ -132,15 +172,7 @@ namespace MyWpfApp.Model
             var page = document.Pages[pageIndex];
             
             // Extract PDF content bytes safely
-            PdfContent content = null;
-            if (page.Contents != null)
-                content = page.Contents.CreateSingleContent();
-
-            byte[] bytes;
-            if (content != null && content.Stream != null)
-                bytes = content.Stream.Value; // The real bytes
-            else
-                bytes = new byte[0];
+            var bytes = GetPageBytes(document, pageIndex);
 
             using (var sha = SHA256.Create())
             {
