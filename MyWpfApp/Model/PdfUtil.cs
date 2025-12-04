@@ -167,7 +167,7 @@ namespace MyWpfApp.Model
         /// Returns a hash of an empty byte array if the page has no content.
         /// </returns>
 
-        private static string ComputePageHash(PdfDocument document, int pageIndex)
+        public static string ComputePageHash(PdfDocument document, int pageIndex)
         {
             var page = document.Pages[pageIndex];
             
