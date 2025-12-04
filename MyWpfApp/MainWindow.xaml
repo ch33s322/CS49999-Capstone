@@ -150,7 +150,7 @@
                                                                             </ContextMenu>
                                                                         </StackPanel.ContextMenu>
                                                                         <Border Padding ="5,0,0,0" Background="LightGray">
-                                                                            <TextBlock Text="{Binding orgPdfName}" FontWeight="Bold"/>
+                                                                            <TextBlock Text="{Binding orgPdfName}"/>
                                                                         </Border>
                                                                         <ItemsControl ItemsSource="{Binding fileNames}" AlternationCount="2">
                                                                             <ItemsControl.ItemTemplate>
