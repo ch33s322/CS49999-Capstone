@@ -1,11 +1,12 @@
-﻿using System;
+﻿using MyWpfApp.Utilities;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Diagnostics;
-using System.Collections.Concurrent;
 
 namespace MyWpfApp.Model
 {
@@ -56,6 +57,27 @@ namespace MyWpfApp.Model
 
                     // perform split on a threadpool thread
                     var splitFiles = await Task.Run(() => m_pdfSplitter.SplitPdf(inputPdfPath, AppSettings.JobDir, AppSettings.MaxPages)).ConfigureAwait(false);
+
+                    // Validate the split files
+                    var validation = PdfValidator.ValidateSplitIntegrity(
+                        inputPdfPath,
+                        splitFiles,
+                        AppSettings.JobDir);
+
+                    if (!validation.Success)
+                    {
+                        string msg = "PDF validation failed:\n" + validation.ErrorMessage;
+
+                        if (validation.PageErrors.Any())
+                            msg += "\n\n" + string.Join("\n", validation.PageErrors);
+
+                        ActivityLogger.LogAction("PdfValidationFailed", msg);
+
+                        throw new InvalidOperationException(msg);  // stops job creation
+                    } else
+                    {
+                        ActivityLogger.LogAction("PdfValidationSucceeded", $"PDF '{pdfName}' split into {splitFiles.Count} files successfully.");
+                    }
 
                     var job = new Job(printerName, splitFiles, simplex, pdfName);
                     return job;

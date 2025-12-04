@@ -1,9 +1,13 @@
-﻿using System;
+﻿using PdfSharpCore.Pdf;
+using PdfSharpCore.Pdf.Advanced;
+using PdfSharpCore.Pdf.IO;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -101,6 +105,78 @@ namespace MyWpfApp.Model
             {
                 // Generic exception for unexpected issues
                 MessageBox.Show($"An error occurred while trying to open the PDF file: {ex.Message}", "Error: View PDF", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Gets the total number of pages in a PDF document.
+        /// </summary>
+        /// <param name="pdfPath">
+        /// Path to the PDF file
+        /// </param>
+        public static int GetPageCount(string pdfPath)
+        {
+            using (var doc = PdfReader.Open(pdfPath, PdfDocumentOpenMode.Import))
+            {
+                return doc.PageCount;
+            }
+        }
+
+        /// <summary>
+        /// Extracts the raw content bytes of a specific page in a PDF document.
+        /// </summary>
+        /// <param name="doc">
+        /// PdfDocument object representing the loaded PDF.
+        /// </param>
+        /// <param name="pageIndex">
+        /// Zero-based index of the page to extract bytes from.
+        /// </param>
+        /// <returns></returns>
+        public static byte[] GetPageBytes(PdfDocument doc, int pageIndex)
+        {
+            var page = doc.Pages[pageIndex];
+            // Extract PDF content bytes safely
+            PdfContent content = null;
+            if (page.Contents != null)
+                content = page.Contents.CreateSingleContent();
+            byte[] bytes;
+            if (content != null && content.Stream != null)
+                bytes = content.Stream.Value; // The real bytes
+            else
+                bytes = new byte[0];
+            return bytes;
+        }
+
+        /// <summary>
+        /// Computers a SHA256 hash of the content bytes of a specific page in a PDF document.
+        /// This can be used for integrity checks or to detect changes to specific pages.
+        /// 
+        /// The hash is computed based on the raw content stream bytes of the page, meaning
+        /// differences in text, images, or other content elements will result in different hashes.
+        /// </summary>
+        /// <param name="document">
+        /// The loaded PDF document containing the page to hash.
+        /// Must be opened in a mode that allows reading content streams.
+        /// </param>
+        /// <param name="pageIndex">
+        /// Zero-based index of the page to compute the hash for. Must be within the range of existing pages in the document.
+        /// An ArgumentOutOfRangeException is thrown if the index is invalid.
+        /// </param>
+        /// <returns>
+        /// A string representing the SHA256 hash of the page's content bytes, formatted as a hexadecimal string.
+        /// Returns a hash of an empty byte array if the page has no content.
+        /// </returns>
+
+        public static string ComputePageHash(PdfDocument document, int pageIndex)
+        {
+            var page = document.Pages[pageIndex];
+            
+            // Extract PDF content bytes safely
+            var bytes = GetPageBytes(document, pageIndex);
+
+            using (var sha = SHA256.Create())
+            {
+                return BitConverter.ToString(sha.ComputeHash(bytes));
             }
         }
     }
