@@ -435,6 +435,23 @@ namespace MyWpfApp
         {
             var sendButton = sender as Button;
 
+            if (string.IsNullOrWhiteSpace(MaxPagesTextBox.Text))
+            {
+                MessageBox.Show("Please enter a value (number greater than 0, no commas).", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(MaxPagesTextBox.Text.Trim(), out int newMax) || newMax < 1)
+            {
+                MessageBox.Show("Please enter an integer greater than 0, without commas.", "Invalid value", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            AppSettings.MaxPages = newMax;
+            MessageBox.Show($"Max pages per split set to {newMax}.", "Settings updated", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            MaxPagesTextBox.Text = "1000"; // reset to default
+
             // Determine selected printer from the PrinterSelect combobox
             _selectedPrinter = PrinterSelect.SelectedItem as Printer.Model.Printer;
             string printerName = _selectedPrinter?.Name;
@@ -512,6 +529,8 @@ namespace MyWpfApp
                 {
                     System.Windows.Application.Current.Dispatcher.Invoke(() => sendButton.IsEnabled = true);
                 }
+
+                
             }
         }
 
