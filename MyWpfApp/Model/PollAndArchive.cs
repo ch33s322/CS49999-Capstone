@@ -35,12 +35,37 @@ namespace MyWpfApp.Model
             _watcher.Created += OnPdfCreated;
         }
 
-        // These are necessary for now since maxPages and the temp outputDirectory aren't global values
-        // Once we have these configurable as settings we can remove these variables
         public void StartWatching()
         {
-            _watcher.EnableRaisingEvents = true;
-            Debug.WriteLine("Started watching for new PDF files.");
+            // Temporarily disable events so files already in the folder don't also fire Created events while we scan.
+            _watcher.EnableRaisingEvents = false;
+
+            try
+            {
+                // Kick off processing for any PDFs already present in the input directory.
+                foreach (var file in Directory.EnumerateFiles(_inputDirectory, "*.pdf"))
+                {
+                    try
+                    {
+                        // Fire-and-forget the async processing (ProcessFileAsync will wait until file is ready).
+                        _ = ProcessFileAsync(file, _cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to enqueue existing file '{file}': {ex}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error scanning input directory '{_inputDirectory}': {ex}");
+            }
+            finally
+            {
+                // Start watching for new files after initial scan.
+                _watcher.EnableRaisingEvents = true;
+                Debug.WriteLine("Started watching for new PDF files.");
+            }
         }
 
         // When new PDF file is found in input directory

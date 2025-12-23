@@ -9,26 +9,39 @@ namespace MyWpfApp.Model
     public class Job
     {
         //name of the main PDF the job is made from
-        public string OrgPdfName { get; set; }
+        public string orgPdfName { get; set; }
         //printer job is assigned to
-        public string printerName {  get; set; }
+        public string printerName { get; set; }
         //List of file names to print
-        public List<string> fileNames { get; set;  } = new List<string>();
+        public List<string> fileNames { get; set; } = new List<string>();
         //unique id for the job
         public Guid jobId { get; set; } = Guid.NewGuid();
         //time stamp when job was created
         public DateTime dateTime { get; set; } = DateTime.Now;
         //simplex or duplex(by default it is simplex, false means duplex)
         public bool Simplex { get; set; } = true;
+        //storing Page Count information
+        //public List<int> pageCount { get; set; }
+        ////Storing Size of each pdf section in 
+        //public List<long> fileSizes { get; set; }
 
+        // parameterless ctor — required for serializers and deserializers
+        public Job()
+        {
+        }
 
         //constructor
-        public Job(string printerName, List<string> fileNames, bool simplex, string orgPdfName)
+        public Job(string PrinterName, List<string> FileNames, bool simplex, string OrgPdfName)
         {
-            printerName = printerName ?? throw new ArgumentNullException(nameof(printerName));
-            fileNames.AddRange(fileNames ?? throw new ArgumentNullException(nameof(fileNames)));
+            printerName = PrinterName;
+            fileNames = new List<string>(FileNames);
             Simplex = simplex;
-            OrgPdfName = orgPdfName;
+            orgPdfName = OrgPdfName;
+        }
+
+        public override string ToString()
+        {
+            return $"Job ID: {jobId}, Printer: {printerName}, Files: {string.Join(", ", fileNames)}, Simplex: {Simplex}, Original PDF: {orgPdfName}, Created At: {dateTime}";
         }
 
     }

@@ -28,8 +28,9 @@ namespace MyWpfApp.Model
             {
                 throw new ArgumentOutOfRangeException(nameof(maxPages), "Max pages must be greater than 0");
             }
-            //output file name list
+            //output file name list & prefix for file name
             List<string> outputNameList = new List<string>();
+            int filePrefix = 11;
             //using statement ensures proper clean up of pdfdocument object because it uses idisposable interface
             using (PdfDocument input = PdfReader.Open(inputFilePath, PdfDocumentOpenMode.Import))
             {
@@ -48,7 +49,10 @@ namespace MyWpfApp.Model
                             output.AddPage(input.Pages[j]);
                         }
                         //get original filename
-                        string fileName = Path.GetFileNameWithoutExtension(inputFilePath) + $"_part_{i+1}-{endPage}.pdf";
+                        string originalFileName = Path.GetFileNameWithoutExtension(inputFilePath) + $"_part_{i+1}-{endPage}.pdf";
+                        // Add the prefix to the file name
+                        string fileName = $"{filePrefix}_{originalFileName}";
+                        ++filePrefix;
                         //add file name to the
                         outputNameList.Add(fileName);
                         //create output path for file

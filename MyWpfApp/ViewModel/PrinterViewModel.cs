@@ -1,6 +1,4 @@
-﻿
-using Printer.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,16 +6,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.Net.NetworkInformation;
-using System.Printing;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Documents;
+using MyWpfApp.Model;
 
 namespace Printer.ViewModel
 {
-    
     public class PrinterViewModel : INotifyPropertyChanged, IDisposable
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -41,42 +39,101 @@ namespace Printer.ViewModel
             LoadPrinters();
         }
 
+        // Load only printers persisted by PrintManager (AppSettings.PrinterStoreFile)
         private void LoadPrinters()
         {
-            // The list of printers will be stored here
             AvailablePrinters.Clear();
             DisposeWatchers();
 
             try
             {
-                // Use LocalPrintServer to get a collection of print queues (printers)
-                string query = "SELECT Name, PrinterStatus FROM Win32_Printer";
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-
-                foreach (ManagementObject printer in searcher.Get())
+                var storePath = AppSettings.PrinterStoreFile;
+                if (!File.Exists(storePath))
                 {
-                    string name = printer["Name"].ToString();
-                    ushort wmiStatus = (ushort)printer["PrinterStatus"];
-
-                    var newPrinter = new Model.Printer
-                    {
-                        Name = name,
-                        Status = GetPrinterStatus(wmiStatus)
-                    };
-
-                    AvailablePrinters.Add(newPrinter);
-
-                    // Start the WMI event listener for this specific printer
-                    WatchPrinterStatus(name);
+                    Debug.WriteLine("Persisted printer store not found; no printers to watch.");
+                    return;
                 }
 
-                Debug.WriteLine($"Loaded {AvailablePrinters.Count} printers and started watchers.");
+                List<PersistedPrinterInfo> persisted;
+                try
+                {
+                    using (var fs = File.OpenRead(storePath))
+                    {
+                        var ser = new DataContractJsonSerializer(typeof(List<PersistedPrinterInfo>));
+                        persisted = ser.ReadObject(fs) as List<PersistedPrinterInfo> ?? new List<PersistedPrinterInfo>();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to read persisted printer store: {ex.Message}");
+                    return;
+                }
+
+                foreach (var pinfo in persisted)
+                {
+                    var printerName = pinfo.Name ?? string.Empty;
+                    if (string.IsNullOrEmpty(printerName))
+                    {
+                        // Skip empty-name entries (these are used for "unassigned" jobs)
+                        continue;
+                    }
+
+                    // Query WMI for that specific printer
+                    string escaped = printerName.Replace("\\", "\\\\"); 
+                    string query = $"SELECT Name, PrinterStatus FROM Win32_Printer WHERE Name = '{escaped}'";
+                    ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+
+                    bool found = false;
+                    foreach (ManagementObject printer in searcher.Get())
+                    {
+                        found = true;
+                        string name = printer["Name"].ToString();
+                        ushort wmiStatus = (ushort)printer["PrinterStatus"];
+
+                        var newPrinter = new Model.Printer
+                        {
+                            Name = name,
+                            Status = GetPrinterStatus(wmiStatus),
+                            // populate Jobs from persisted store so UI shows associated jobs
+                            Jobs = pinfo.Jobs ?? new List<Job>()
+                        };
+
+                        AvailablePrinters.Add(newPrinter);
+                        WatchPrinterStatus(name);
+                    }
+
+                    if (!found)
+                    {
+                        // Persisted printer not present on system right now - still add so UI shows it
+                        var newPrinter = new Model.Printer
+                        {
+                            Name = printerName,
+                            Status = "Not Present",
+                            // populate Jobs from persisted store so UI shows associated jobs even if printer not present
+                            Jobs = pinfo.Jobs ?? new List<Job>()
+                        };
+                        AvailablePrinters.Add(newPrinter);
+
+                        // Start watcher for when the device appears/changes
+                        WatchPrinterStatus(printerName);
+                    }
+                }
+
+                Debug.WriteLine($"Loaded {AvailablePrinters.Count} persisted printers and started watchers.");
             }
-            catch // Handle exceptions (e.g., insufficient permissions)
+            catch (Exception ex)
             {
-                // error message
-                Debug.WriteLine($"Error during LoadPrinters: NOT GOOD");
+                Debug.WriteLine($"Error during LoadPrinters: {ex.Message}");
             }
+        }
+
+        // DTO matching the persisted structure in PrintManager (only fields needed here)
+        [DataContract]
+        private class PersistedPrinterInfo
+        {
+            [DataMember] public string Name { get; set; }
+            [DataMember] public string Status { get; set; }
+            [DataMember] public List<Job> Jobs { get; set; }
         }
 
         public void WatchPrinterStatus(string printerName)
@@ -111,7 +168,10 @@ namespace Printer.ViewModel
             };
 
             // Start listening
-            Task.Run(() => watcher.Start());
+            Task.Run(() => {
+                try { watcher.Start(); }
+                catch (Exception ex) { Debug.WriteLine($"Watcher start failed for '{printerName}': {ex.Message}"); }
+            });
         }
 
         private void UpdatePrinterInCollection(string name, string newStatus)
@@ -129,31 +189,78 @@ namespace Printer.ViewModel
         {
             Debug.WriteLine($"Status UPDATE!!!!!!!!!");
             Debug.WriteLine($"Status Code: {statusValue}");
-                    // Check for the most important "down" states
-                    if (statusValue == 1) return "Not Connected";
-                    if (statusValue == 3) return "Ready";
-                    if (statusValue == 4) return "Printing";
-                    if (statusValue == 7 || statusValue == 2) return "Offline/Unavailable";
-                    //if (statusValue == 7) return "Toner/Ink Low";
-                    if (statusValue > 8) return "Error";
+            // Check for the most important "down" states
+            if (statusValue == 1) return "Not Connected";
+            if (statusValue == 3) return "Ready";
+            if (statusValue == 4) return "Printing";
+            if (statusValue == 7 || statusValue == 2) return "Offline/Unavailable";
+            if (statusValue > 8) return "Error";
 
-                    // 2 is typically the ready state
-                    //if (statusValue == 2) return "Ready";
+            Debug.WriteLine($"Status Code: {statusValue}");
+            return $"Status Code: {statusValue}";
+        }
 
-                    // If a specific code isn't handled, return the raw code
-                    Debug.WriteLine($"Status Code: {statusValue}");
-                    return $"Status Code: {statusValue}";
+        public Job GetJobByFileName(string fileNameToFind)
+        {
+            if (string.IsNullOrEmpty(fileNameToFind))
+            {
+                return null;
+            }
+
+            // Use LINQ to flatten the collection of Jobs from all Printers
+            // and find the first Job that matches the criteria.
+            var matchingJob = AvailablePrinters
+                // SelectMany flattens all the 'Jobs' lists from all printers into a single sequence of Job objects
+                .SelectMany(printer => printer.Jobs)
+                // Find the first Job where its 'fileNames' list contains the target file name.
+                .FirstOrDefault(job => job.fileNames != null && job.fileNames.Contains(fileNameToFind));
+
+            // Log the result for debugging
+            if (matchingJob != null)
+            {
+                Debug.WriteLine($"Found Job: {matchingJob.orgPdfName} for file: {fileNameToFind}");
+            }
+            else
+            {
+                Debug.WriteLine($"No Job found containing file: {fileNameToFind}");
+            }
+
+            return matchingJob;
+        }
+
+        public Printer.Model.Printer GetPrinterByJob(Job jobToFind)
+        {
+            if (jobToFind == null)
+            {
+                return null;
+            }
+
+            // Use LINQ to flatten the collection of Jobs from all Printers
+            // and find the first Job that matches the criteria.
+            var matchingJob = AvailablePrinters
+                // SelectMany flattens all the 'Jobs' lists from all printers into a single sequence of Job objects
+                .FirstOrDefault(printer => printer.Jobs.Contains(jobToFind));
+            if (matchingJob != null)
+            {
+                Debug.WriteLine($"Found Printer: {matchingJob.Name} for Job: {jobToFind.orgPdfName}");
+            }
+            else
+            {
+                Debug.WriteLine($"No Printer found containing Job: {jobToFind.orgPdfName}");
+            }
+
+            return matchingJob;
         }
 
         // ----------------------------------------------------------------------------------
-        // RESOURCE CLEANUP (IDisposable Implementation)
+        // RESOURCE CLEANUP (IDisposable IMPLEMENTATION)
         // ----------------------------------------------------------------------------------
         private void DisposeWatchers()
         {
             foreach (var watcher in _watchers)
             {
                 try { watcher.Stop(); } catch { /* Ignore exception on stopping */ }
-                watcher.Dispose(); // Release unmanaged resources
+                try { watcher.Dispose(); } catch { /* ignore */ }
             }
             _watchers.Clear();
         }
@@ -176,8 +283,4 @@ namespace Printer.ViewModel
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
-
-
-    
-
 }
