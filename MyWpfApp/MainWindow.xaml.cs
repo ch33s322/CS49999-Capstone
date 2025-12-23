@@ -152,7 +152,32 @@ namespace MyWpfApp
         {
             _printManager.JobsChanged -= PrintManager_JobsChanged;
             try { _poller?.Dispose(); } catch { }
+
+            // Dispose any active view-models assigned as DataContext to avoid leaking ManagementEventWatcher
+            try
+            {
+                DisposeDataContextsIfNeeded(PrinterSelect.DataContext, PrintJobManager.DataContext, currentPrinterPickComboBox.DataContext);
+            }
+            catch { }
+
             base.OnClosed(e);
+        }
+
+        private void DisposeDataContextsIfNeeded(params object[] contexts)
+        {
+            if (contexts == null) return;
+            var disposed = new List<object>();
+            foreach (var ctx in contexts)
+            {
+                if (ctx == null) continue;
+                // Avoid disposing same object multiple times if referenced by multiple controls
+                if (disposed.Contains(ctx)) continue;
+                if (ctx is IDisposable d)
+                {
+                    try { d.Dispose(); } catch { }
+                    disposed.Add(ctx);
+                }
+            }
         }
 
         private void SimplexDuplexCheckBoxChecked(object sender, RoutedEventArgs e)
@@ -188,6 +213,42 @@ namespace MyWpfApp
                         break;
                     case "Remove Job":
                         //MessageBox.Show($"Job Context: Remove requested for job '{jobContext.orgPdfName}'");
+                        // Confirm with the user
+                        var confirm = MessageBox.Show(
+                            $"Are you sure you want to remove '{jobContext.orgPdfName}'?",
+                            "Confirm Remove",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+
+                        if (confirm != MessageBoxResult.Yes)
+                            break;
+
+                        foreach (var fileName in jobContext.fileNames.ToList())
+                        {
+                            try
+                            {
+                                bool removed = _printManager.RemoveSplitFileFromJob(jobContext.jobId, fileName);
+
+                                if (removed)
+                                {
+                                    // Refresh view-models so UI reflects the removed split file
+                                    //RefreshPrinterViewModels();
+                                    //MessageBox.Show($"Removed file '{fileName}' from job '{jobContext.orgPdfName}'.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    try { ActivityLogger.LogAction("RemoveSplitFile", $"User removed '{fileName}' from job {jobContext.jobId}"); }
+                                    catch (Exception ex) { Debug.WriteLine($"Exception when logging job removal: {ex}"); }
+                                }
+                                else
+                                {
+                                    MessageBox.Show($"Failed to remove '{fileName}'. It may not be part of the job or deletion failed.", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Error removing file '{fileName}': {ex.Message}", "Remove Job", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        }
+                        RefreshPrinterViewModels();
+
                         break;
                 }
             }
@@ -799,6 +860,14 @@ namespace MyWpfApp
         // Helper to replace the PrinterViewModel instances used by UI controls
         private void RefreshPrinterViewModels()
         {
+            // Dispose any existing DataContext instances (they create WMI watchers). Not doing so causes
+            // ManagementEventWatcher handles to accumulate and eventually triggers WMI "quota violation".
+            try
+            {
+                DisposeDataContextsIfNeeded(PrinterSelect.DataContext, PrintJobManager.DataContext, currentPrinterPickComboBox.DataContext);
+            }
+            catch { }
+
             var vm = new Printer.ViewModel.PrinterViewModel();
             PrinterSelect.DataContext = vm;
             PrintJobManager.DataContext = vm;

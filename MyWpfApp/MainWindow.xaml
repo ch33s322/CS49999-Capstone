@@ -197,7 +197,6 @@
                                                                                                     <MenuItem Header="Print Job"  Click="RightClickGetFile" Tag="{Binding .}"/>
                                                                                                     <MenuItem Header="Remove Job" Click="RightClickGetFile"/>
                                                                                                     <MenuItem Header="View Job" Click="RightClickGetFile"/>
-                                                                                                    <MenuItem Header="Move Job" Click="RightClickGetFile"/>
                                                                                                 </ContextMenu>
                                                                                             </Button.ContextMenu>
                                                                                         </Button>
